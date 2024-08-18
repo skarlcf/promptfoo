@@ -116,6 +116,8 @@ export async function doGenerateRedteam(options: RedteamGenerateOptions) {
     purpose: redteamConfig?.purpose || options.purpose,
     strategies: strategyObjs,
   };
+  // maybe load plugins
+
   const parsedConfig = RedteamConfigSchema.safeParse(config);
   if (!parsedConfig.success) {
     logger.error('Invalid redteam configuration:');

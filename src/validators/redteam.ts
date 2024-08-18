@@ -1,4 +1,5 @@
 import dedent from 'dedent';
+import fs from 'node:fs';
 import { z } from 'zod';
 import {
   ALL_PLUGINS as REDTEAM_ALL_PLUGINS,
@@ -29,12 +30,34 @@ const RedteamPluginObjectSchema = z.object({
   config: z.record(z.unknown()).optional().describe('Plugin-specific configuration'),
 });
 
+const RedteamCustomPluginSchema = z.object({
+  id: z.string().describe('Path to the custom plugin'),
+  numTests: z
+    .number()
+    .int()
+    .positive()
+    .default(DEFAULT_NUM_TESTS_PER_PLUGIN)
+    .describe('Number of tests to generate for this plugin'),
+  config: z.record(z.unknown()).optional().describe('Plugin-specific configuration'),
+  template: z.string().describe('Template to use for generating adversarial prompts'),
+  grader: z.string().describe('Prompt to use for grading tests'),
+});
+
 /**
  * Schema for individual redteam plugins or their shorthand.
  */
 export const RedteamPluginSchema = z.union([
   z.enum(REDTEAM_ALL_PLUGINS as [string, ...string[]]).describe('Name of the plugin'),
   RedteamPluginObjectSchema,
+  RedteamCustomPluginSchema,
+  z
+    .string()
+    .startsWith('file://')
+    .transform((path) => {
+      const content = fs.readFileSync(path.slice(7), 'utf-8');
+      return RedteamCustomPluginSchema.parse(JSON.parse(content));
+    })
+    .describe('Path to a custom plugin JSON file'),
 ]);
 
 /**
