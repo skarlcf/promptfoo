@@ -1,6 +1,10 @@
 import dedent from 'dedent';
+import yaml from 'js-yaml';
 import fs from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
+import cliState from '../cliState';
+import logger from '../logger';
 import {
   ALL_PLUGINS as REDTEAM_ALL_PLUGINS,
   DEFAULT_PLUGINS as REDTEAM_DEFAULT_PLUGINS,
@@ -58,9 +62,14 @@ export const RedteamPluginSchema = z.union([
   z
     .string()
     .startsWith('file://')
-    .transform((path) => {
-      const content = fs.readFileSync(path.slice(7), 'utf-8');
-      return RedteamCustomPluginSchema.parse(JSON.parse(content));
+    .transform((configPath) => {
+      const filePath = configPath.slice(7);
+      const fullPath = path.join(cliState.basePath || '', filePath);
+      logger.error(`------------- fullPath: ${fullPath}`);
+      logger.error(`------------- filePath: ${filePath}`);
+      logger.error(`------------- cliState.basePath: ${cliState.basePath}`);
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      return RedteamCustomPluginSchema.parse(yaml.load(content));
     })
     .describe('Path to a custom plugin JSON file'),
 ]);
