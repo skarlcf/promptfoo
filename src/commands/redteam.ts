@@ -10,6 +10,7 @@ import type { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getUserEmail, setUserEmail } from '../accounts';
+import { getEnvString } from '../envars';
 import { readGlobalConfig, writeGlobalConfigPartial } from '../globalConfig';
 import logger from '../logger';
 import {
@@ -170,7 +171,7 @@ export async function redteamInit(directory: string | undefined) {
     providers = [selectedProvider];
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!getEnvString('OPENAI_API_KEY')) {
     console.clear();
     logger.info(chalk.bold('OpenAI API Configuration\n'));
 
@@ -335,7 +336,7 @@ export async function redteamInit(directory: string | undefined) {
       '\n' +
         chalk.blue(
           'To generate test cases later, use the command: ' +
-            chalk.bold('promptfoo generate redteam'),
+            chalk.bold('promptfoo redteam generate'),
         ),
     );
   }
@@ -344,10 +345,8 @@ export async function redteamInit(directory: string | undefined) {
   await telemetry.send();
 }
 
-export function redteamCommand(program: Command) {
-  const redteamCommand = program.command('redteam').description('Red team LLM applications');
-
-  redteamCommand
+export function initRedteamCommand(program: Command) {
+  program
     .command('init [directory]')
     .description('Initialize red teaming project')
     .action(async (directory: string | undefined) => {

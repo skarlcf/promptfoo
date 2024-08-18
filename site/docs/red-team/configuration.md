@@ -5,7 +5,7 @@ sidebar_label: 'Configuration'
 
 # Redteam Configuration
 
-The `redteam` section in your `promptfooconfig.yaml` file is used when generating redteam tests via `promptfoo generate redteam`. It allows you to specify the plugins and other parameters of your redteam tests.
+The `redteam` section in your `promptfooconfig.yaml` file is used when generating redteam tests via `promptfoo redteam generate`. It allows you to specify the plugins and other parameters of your redteam tests.
 
 ## Getting Started
 
@@ -212,7 +212,7 @@ policy: >
 To see a complete list of available plugins, run:
 
 ```bash
-promptfoo generate redteam --help
+promptfoo redteam generate --help
 ```
 
 ### Strategies
@@ -225,9 +225,12 @@ Strategies modify or generate additional test cases based on the output of other
 - `prompt-injection`: Wraps the payload in a prompt injection (Default)
 - `jailbreak`: Applies a linear probe jailbreak technique to deliver the payload (Default)
 - `jailbreak:tree`: Applies a tree-based jailbreak technique
+- `crescendo`: Applies a multi-turn jailbreak technique
 - `rot13`: Applies ROT13 encoding to the injected variable, shifting each letter 13 positions in the alphabet
 - `base64`: Encodes the injected variable using Base64 encoding
 - `leetspeak`: Converts the injected variable to leetspeak, replacing certain letters with numbers or symbols
+
+See [Strategies](/docs/category/strategies/) for comprehensive descriptions of each strategy.
 
 #### Strategy Specification
 
@@ -271,7 +274,7 @@ A common use case is to use a [custom HTTP endpoint](/docs/providers/http/) or [
 To use the `openai:chat:gpt-4o-mini` model, you can override the provider on the command line:
 
 ```sh
-npx promptfoo@latest generate redteam -w --provider openai:chat:gpt-4o-mini
+npx promptfoo@latest redteam generate -w --provider openai:chat:gpt-4o-mini
 ```
 
 Or in the config:
