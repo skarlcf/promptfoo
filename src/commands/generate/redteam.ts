@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import dedent from 'dedent';
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import path from 'path';
 import invariant from 'tiny-invariant';
@@ -144,7 +144,7 @@ export async function doGenerateRedteam(options: RedteamGenerateOptions) {
 
   if (options.output) {
     const existingYaml = configPath
-      ? (yaml.load(fs.readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>)
+      ? (yaml.load(readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>)
       : {};
     const updatedYaml: Partial<UnifiedConfig> = {
       ...existingYaml,
@@ -171,7 +171,7 @@ export async function doGenerateRedteam(options: RedteamGenerateOptions) {
     );
     printBorder();
   } else if (options.write && configPath) {
-    const existingConfig = yaml.load(fs.readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>;
+    const existingConfig = yaml.load(readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>;
     existingConfig.defaultTest = {
       ...(existingConfig.defaultTest || {}),
       metadata: {

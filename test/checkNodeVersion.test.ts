@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import * as fs from 'fs';
-import * as path from 'path';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { checkNodeVersion } from '../src/checkNodeVersion';
 import logger from '../src/logger';
 
@@ -25,8 +25,8 @@ describe('checkNodeVersion', () => {
   beforeEach(() => {
     jest.resetAllMocks();
 
-    jest.mocked(path.resolve).mockImplementation(() => 'mocked/path/to/package.json');
-    jest.mocked(fs.readFileSync).mockImplementation(() =>
+    jest.mocked(resolve).mockImplementation(() => 'mocked/path/to/package.json');
+    jest.mocked(readFileSync).mockImplementation(() =>
       JSON.stringify({
         engines: { node: '>=18.0.0' },
       }),
@@ -69,7 +69,7 @@ describe('checkNodeVersion', () => {
 
   it('should handle version strings correctly and exit if required version is not met', () => {
     setNodeVersion('v18.0.0');
-    jest.mocked(fs.readFileSync).mockImplementation(() =>
+    jest.mocked(readFileSync).mockImplementation(() =>
       JSON.stringify({
         engines: { node: '>=18.0.1' },
       }),

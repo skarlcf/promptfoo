@@ -1,10 +1,10 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import { processYamlFile } from '../src/prompts/processors/yaml';
 
 jest.mock('fs');
 
 describe('processYamlFile', () => {
-  const mockReadFileSync = jest.mocked(fs.readFileSync);
+  const mockReadFileSync = jest.mocked(readFileSync);
 
   beforeEach(() => {
     jest.clearAllMocks();

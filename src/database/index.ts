@@ -1,16 +1,16 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as path from 'path';
+import { resolve } from 'path';
 import { getConfigDirectoryPath } from '../util/config';
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export function getDbPath() {
-  return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'promptfoo.db');
+  return resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'promptfoo.db');
 }
 
 export function getDbSignalPath() {
-  return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'evalLastWritten');
+  return resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'evalLastWritten');
 }
 
 export function getDb() {

@@ -1,7 +1,7 @@
 import dedent from 'dedent';
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import { Response } from 'node-fetch';
-import * as path from 'path';
+import { resolve } from 'path';
 import {
   containsXml,
   createAjv,
@@ -754,7 +754,7 @@ describe('runAssertion', () => {
       value: 'file:///output.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ key: 'value' }));
+    jest.mocked(readFileSync).mockReturnValue(JSON.stringify({ key: 'value' }));
 
     const output = '{"key": "value"}';
 
@@ -765,7 +765,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/output.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/output.json'), 'utf8');
     expect(result).toMatchObject({
       pass: true,
       reason: 'Assertion passed',
@@ -778,7 +778,7 @@ describe('runAssertion', () => {
       value: 'file:///output.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ key: 'value' }));
+    jest.mocked(readFileSync).mockReturnValue(JSON.stringify({ key: 'value' }));
 
     const output = '{"key": "not value"}';
 
@@ -789,7 +789,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/output.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/output.json'), 'utf8');
     expect(result).toMatchObject({
       pass: false,
       reason: 'Expected output "{"key":"value"}" to equal "{"key": "not value"}"',
@@ -953,7 +953,7 @@ describe('runAssertion', () => {
       value: 'file:///schema.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(
+    jest.mocked(readFileSync).mockReturnValue(
       JSON.stringify({
         required: ['latitude', 'longitude'],
         type: 'object',
@@ -981,7 +981,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/schema.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/schema.json'), 'utf8');
     expect(result).toMatchObject({
       pass: true,
       reason: 'Assertion passed',
@@ -994,7 +994,7 @@ describe('runAssertion', () => {
       value: 'file:///schema.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(
+    jest.mocked(readFileSync).mockReturnValue(
       JSON.stringify({
         required: ['latitude', 'longitude'],
         type: 'object',
@@ -1022,7 +1022,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/schema.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/schema.json'), 'utf8');
     expect(result).toMatchObject({
       pass: false,
       reason: 'JSON does not conform to the provided schema. Errors: data/latitude must be number',
@@ -1445,7 +1445,7 @@ describe('runAssertion', () => {
       value: 'file:///schema.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(
+    jest.mocked(readFileSync).mockReturnValue(
       JSON.stringify({
         required: ['latitude', 'longitude'],
         type: 'object',
@@ -1473,7 +1473,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/schema.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/schema.json'), 'utf8');
     expect(result).toMatchObject({
       pass: true,
       reason: 'Assertion passed',
@@ -1486,7 +1486,7 @@ describe('runAssertion', () => {
       value: 'file:///schema.json',
     };
 
-    jest.mocked(fs.readFileSync).mockReturnValue(
+    jest.mocked(readFileSync).mockReturnValue(
       JSON.stringify({
         required: ['latitude', 'longitude'],
         type: 'object',
@@ -1514,7 +1514,7 @@ describe('runAssertion', () => {
       test: {} as AtomicTestCase,
       providerResponse: { output },
     });
-    expect(fs.readFileSync).toHaveBeenCalledWith(path.resolve('/schema.json'), 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith(resolve('/schema.json'), 'utf8');
     expect(result).toMatchObject({
       pass: false,
       reason: 'JSON does not conform to the provided schema. Errors: data/latitude must be number',
@@ -2386,7 +2386,7 @@ describe('runAssertion', () => {
     async (type, mockFn, expectedPass, expectedReason) => {
       const output = 'Expected output';
 
-      jest.doMock(path.resolve('/path/to/assert.js'), () => mockFn, { virtual: true });
+      jest.doMock(resolve('/path/to/assert.js'), () => mockFn, { virtual: true });
 
       const fileAssertion: Assertion = {
         type: 'javascript',
@@ -2417,7 +2417,7 @@ describe('runAssertion', () => {
     const output = 'Expected output';
     const mockFn = jest.fn((output: string) => output === 'Expected output');
 
-    jest.doMock(path.resolve('/config_path/path/to/assert.js'), () => mockFn, { virtual: true });
+    jest.doMock(resolve('/config_path/path/to/assert.js'), () => mockFn, { virtual: true });
 
     const fileAssertion: Assertion = {
       type: 'javascript',
@@ -2588,7 +2588,7 @@ describe('runAssertion', () => {
         providerResponse: { output },
       });
 
-      expect(runPython).toHaveBeenCalledWith(path.resolve('/path/to/assert.py'), 'get_assert', [
+      expect(runPython).toHaveBeenCalledWith(resolve('/path/to/assert.py'), 'get_assert', [
         output,
         {
           prompt: 'Some prompt that includes "double quotes" and \'single quotes\'',

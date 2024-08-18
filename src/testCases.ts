@@ -1,10 +1,10 @@
 import $RefParser from '@apidevtools/json-schema-ref-parser';
 import { parse as parseCsv } from 'csv-parse/sync';
 import dedent from 'dedent';
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import { globSync } from 'glob';
 import yaml from 'js-yaml';
-import * as path from 'path';
+import { resolve, dirname } from 'path';
 import { parse as parsePath } from 'path';
 import invariant from 'tiny-invariant';
 import { testCaseFromCsvRow } from './csv';
@@ -44,13 +44,13 @@ export async function readVarsFiles(
 
   const ret: Record<string, string | string[] | object> = {};
   for (const pathOrGlob of pathOrGlobs) {
-    const resolvedPath = path.resolve(basePath, pathOrGlob);
+    const resolvedPath = resolve(basePath, pathOrGlob);
     const paths = globSync(resolvedPath, {
       windowsPathsNoEscape: true,
     });
 
     for (const p of paths) {
-      const yamlData = yaml.load(fs.readFileSync(p, 'utf-8'));
+      const yamlData = yaml.load(readFileSync(p, 'utf-8'));
       Object.assign(ret, yamlData);
     }
   }
@@ -64,18 +64,18 @@ export async function readStandaloneTestsFile(
 ): Promise<TestCase[]> {
   // This function is confusingly named - it reads a CSV, JSON, or YAML file of
   // TESTS or test equivalents.
-  const resolvedVarsPath = path.resolve(basePath, varsPath);
+  const resolvedVarsPath = resolve(basePath, varsPath);
   const fileExtension = parsePath(varsPath).ext.slice(1);
   let rows: CsvRow[] = [];
 
   if (varsPath.startsWith('https://docs.google.com/spreadsheets/')) {
     rows = await fetchCsvFromGoogleSheet(varsPath);
   } else if (fileExtension === 'csv') {
-    rows = parseCsv(fs.readFileSync(resolvedVarsPath, 'utf-8'), { columns: true });
+    rows = parseCsv(readFileSync(resolvedVarsPath, 'utf-8'), { columns: true });
   } else if (fileExtension === 'json') {
-    rows = parseJson(fs.readFileSync(resolvedVarsPath, 'utf-8'));
+    rows = parseJson(readFileSync(resolvedVarsPath, 'utf-8'));
   } else if (fileExtension === 'yaml' || fileExtension === 'yml') {
-    rows = yaml.load(fs.readFileSync(resolvedVarsPath, 'utf-8')) as unknown as any;
+    rows = yaml.load(readFileSync(resolvedVarsPath, 'utf-8')) as unknown as any;
   }
 
   return rows.map((row, idx) => {
@@ -122,9 +122,9 @@ export async function readTest(
   let testCase: TestCase;
 
   if (typeof test === 'string') {
-    const testFilePath = path.resolve(basePath, test);
-    const testBasePath = path.dirname(testFilePath);
-    const rawTestCase = yaml.load(fs.readFileSync(testFilePath, 'utf-8')) as TestCaseWithVarsFile;
+    const testFilePath = resolve(basePath, test);
+    const testBasePath = dirname(testFilePath);
+    const rawTestCase = yaml.load(readFileSync(testFilePath, 'utf-8')) as TestCaseWithVarsFile;
     testCase = await loadTestWithVars(rawTestCase, testBasePath);
   } else {
     testCase = await loadTestWithVars(test, basePath);
@@ -166,7 +166,7 @@ export async function readTests(
     if (loadTestsGlob.startsWith('file://')) {
       loadTestsGlob = loadTestsGlob.slice('file://'.length);
     }
-    const resolvedPath = path.resolve(basePath, loadTestsGlob);
+    const resolvedPath = resolve(basePath, loadTestsGlob);
     const testFiles = globSync(resolvedPath, {
       windowsPathsNoEscape: true,
     });
@@ -185,7 +185,7 @@ export async function readTests(
       if (testFile.endsWith('.csv')) {
         testCases = await readStandaloneTestsFile(testFile, basePath);
       } else if (testFile.endsWith('.yaml') || testFile.endsWith('.yml')) {
-        testCases = yaml.load(fs.readFileSync(testFile, 'utf-8')) as TestCase[];
+        testCases = yaml.load(readFileSync(testFile, 'utf-8')) as TestCase[];
         testCases = await _deref(testCases, testFile);
       } else if (testFile.endsWith('.json')) {
         testCases = await _deref(require(testFile), testFile);
@@ -198,7 +198,7 @@ export async function readTests(
           testCases = [testCases];
         }
         for (const testCase of testCases) {
-          ret.push(await readTest(testCase, path.dirname(testFile)));
+          ret.push(await readTest(testCase, dirname(testFile)));
         }
       }
     }

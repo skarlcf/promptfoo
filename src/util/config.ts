@@ -1,7 +1,7 @@
-import * as fs from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import yaml from 'js-yaml';
-import * as os from 'os';
-import * as path from 'path';
+import { homedir } from 'os';
+import { join } from 'path';
 import { getEnvString } from '../envars';
 import type { UnifiedConfig } from '../types';
 import { orderKeys } from './json';
@@ -9,9 +9,9 @@ import { orderKeys } from './json';
 let configDirectoryPath: string | undefined = getEnvString('PROMPTFOO_CONFIG_DIR');
 
 export function getConfigDirectoryPath(createIfNotExists: boolean = false): string {
-  const p = configDirectoryPath || path.join(os.homedir(), '.promptfoo');
-  if (createIfNotExists && !fs.existsSync(p)) {
-    fs.mkdirSync(p, { recursive: true });
+  const p = configDirectoryPath || join(homedir(), '.promptfoo');
+  if (createIfNotExists && !existsSync(p)) {
+    mkdirSync(p, { recursive: true });
   }
   return p;
 }
@@ -30,5 +30,5 @@ export function writePromptfooConfig(config: Partial<UnifiedConfig>, outputPath:
     'tests',
     'scenarios',
   ]);
-  fs.writeFileSync(outputPath, yaml.dump(orderedConfig, { skipInvalid: true }));
+  writeFileSync(outputPath, yaml.dump(orderedConfig, { skipInvalid: true }));
 }

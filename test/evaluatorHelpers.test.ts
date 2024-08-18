@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import { resolve } from 'path';
 import { renderPrompt, resolveVariables, runExtensionHook } from '../src/evaluatorHelpers';
 import type { Prompt } from '../src/types';
 import { transform } from '../src/util/transform';
@@ -100,17 +100,17 @@ describe('renderPrompt', () => {
     const evaluateOptions = {};
 
     jest.doMock(
-      path.resolve('/path/to/testFunction.js'),
+      resolve('/path/to/testFunction.js'),
       () => (varName: any, prompt: any, vars: any) => ({ output: `Dynamic value for ${varName}` }),
       { virtual: true },
     );
     jest.doMock(
-      path.resolve('/path/to/testFunction.cjs'),
+      resolve('/path/to/testFunction.cjs'),
       () => (varName: any, prompt: any, vars: any) => ({ output: `and ${varName}` }),
       { virtual: true },
     );
     jest.doMock(
-      path.resolve('/path/to/testFunction.mjs'),
+      resolve('/path/to/testFunction.mjs'),
       () => (varName: any, prompt: any, vars: any) => ({ output: `and ${varName}` }),
       { virtual: true },
     );

@@ -2,9 +2,9 @@
  * Functions for manipulating the global configuration file, which lives at
  * ~/.promptfoo/promptfoo.yaml by default.
  */
-import * as fs from 'fs';
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
 import yaml from 'js-yaml';
-import * as path from 'path';
+import { join } from 'path';
 import type { GlobalConfig } from './configTypes';
 import { getConfigDirectoryPath } from './util/config';
 
@@ -17,16 +17,16 @@ export function resetGlobalConfig(): void {
 export function readGlobalConfig(): GlobalConfig {
   if (!globalConfigCache) {
     const configDir = getConfigDirectoryPath();
-    const configFilePath = path.join(configDir, 'promptfoo.yaml');
+    const configFilePath = join(configDir, 'promptfoo.yaml');
 
-    if (fs.existsSync(configFilePath)) {
-      globalConfigCache = yaml.load(fs.readFileSync(configFilePath, 'utf-8')) as GlobalConfig;
+    if (existsSync(configFilePath)) {
+      globalConfigCache = yaml.load(readFileSync(configFilePath, 'utf-8')) as GlobalConfig;
     } else {
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
+      if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true });
       }
       globalConfigCache = { hasRun: false };
-      fs.writeFileSync(configFilePath, yaml.dump(globalConfigCache));
+      writeFileSync(configFilePath, yaml.dump(globalConfigCache));
     }
   }
 
@@ -34,8 +34,8 @@ export function readGlobalConfig(): GlobalConfig {
 }
 
 export function writeGlobalConfig(config: GlobalConfig): void {
-  fs.writeFileSync(
-    path.join(getConfigDirectoryPath(true), 'promptfoo.yaml') /* createIfNotExists */,
+  writeFileSync(
+    join(getConfigDirectoryPath(true), 'promptfoo.yaml') /* createIfNotExists */,
     yaml.dump(config),
   );
 }

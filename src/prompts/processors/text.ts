@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import type { Prompt } from '../../types';
 import { PROMPT_DELIMITER } from '../constants';
 
@@ -9,7 +9,7 @@ import { PROMPT_DELIMITER } from '../constants';
  * @returns Array of prompts extracted from the file.
  */
 export function processTxtFile(filePath: string, { label }: Partial<Prompt>): Prompt[] {
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const fileContent = readFileSync(filePath, 'utf-8');
   return fileContent // handle leading/trailing delimiters and empty lines
     .split(PROMPT_DELIMITER)
     .map((p) => p.trim())

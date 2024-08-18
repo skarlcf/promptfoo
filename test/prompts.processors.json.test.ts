@@ -1,10 +1,10 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import { processJsonFile } from '../src/prompts/processors/json';
 
 jest.mock('fs');
 
 describe('processJsonFile', () => {
-  const mockReadFileSync = jest.mocked(fs.readFileSync);
+  const mockReadFileSync = jest.mocked(readFileSync);
 
   beforeEach(() => {
     jest.clearAllMocks();

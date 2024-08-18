@@ -1,7 +1,7 @@
-import * as fs from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import yaml from 'js-yaml';
-import * as os from 'os';
-import * as path from 'path';
+import { homedir } from 'os';
+import { join } from 'path';
 import type { UnifiedConfig } from '../src/types';
 import {
   getConfigDirectoryPath,
@@ -15,12 +15,12 @@ jest.mock('js-yaml');
 
 describe('config', () => {
   const mockHomedir = '/mock/home';
-  const defaultConfigPath = path.join(mockHomedir, '.promptfoo');
+  const defaultConfigPath = join(mockHomedir, '.promptfoo');
 
   beforeEach(() => {
     jest.resetAllMocks();
-    jest.mocked(os.homedir).mockReturnValue(mockHomedir);
-    jest.mocked(fs.existsSync).mockReturnValue(false);
+    jest.mocked(homedir).mockReturnValue(mockHomedir);
+    jest.mocked(existsSync).mockReturnValue(false);
     delete process.env.PROMPTFOO_CONFIG_DIR;
   });
 
@@ -31,18 +31,18 @@ describe('config', () => {
 
     it('does not create directory when createIfNotExists is false', () => {
       getConfigDirectoryPath(false);
-      expect(fs.mkdirSync).not.toHaveBeenCalled();
+      expect(mkdirSync).not.toHaveBeenCalled();
     });
 
     it('creates directory when createIfNotExists is true and directory does not exist', () => {
       getConfigDirectoryPath(true);
-      expect(fs.mkdirSync).toHaveBeenCalledWith(defaultConfigPath, { recursive: true });
+      expect(mkdirSync).toHaveBeenCalledWith(defaultConfigPath, { recursive: true });
     });
 
     it('does not create directory when it already exists', () => {
-      jest.mocked(fs.existsSync).mockReturnValue(true);
+      jest.mocked(existsSync).mockReturnValue(true);
       getConfigDirectoryPath(true);
-      expect(fs.mkdirSync).not.toHaveBeenCalled();
+      expect(mkdirSync).not.toHaveBeenCalled();
     });
   });
 
@@ -77,7 +77,7 @@ describe('writePromptfooConfig', () => {
 
     writePromptfooConfig(mockConfig, mockOutputPath);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(mockOutputPath, mockYaml);
+    expect(writeFileSync).toHaveBeenCalledWith(mockOutputPath, mockYaml);
   });
 
   it('orders the keys of the config correctly', () => {
@@ -109,7 +109,7 @@ describe('writePromptfooConfig', () => {
 
     writePromptfooConfig(mockConfig, mockOutputPath);
 
-    expect(fs.writeFileSync).toHaveBeenCalledWith(mockOutputPath, undefined);
+    expect(writeFileSync).toHaveBeenCalledWith(mockOutputPath, undefined);
     expect(yaml.dump).toHaveBeenCalledWith({}, { skipInvalid: true });
   });
 

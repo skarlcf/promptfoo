@@ -1,5 +1,5 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import * as path from 'path';
+import { join } from 'path';
 import { getDb } from './database';
 import logger from './logger';
 
@@ -9,7 +9,7 @@ import logger from './logger';
 export async function runDbMigrations() {
   try {
     const db = getDb();
-    const migrationsFolder = path.join(__dirname, '..', 'drizzle');
+    const migrationsFolder = join(__dirname, '..', 'drizzle');
     logger.debug(`Running migrations from ${migrationsFolder}...`);
     await migrate(db, { migrationsFolder });
   } catch (error) {

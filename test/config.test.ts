@@ -1,6 +1,6 @@
-import * as fs from 'fs';
+import fs from 'fs';
 import { globSync } from 'glob';
-import * as path from 'path';
+import { resolve, dirname } from 'path';
 import { dereferenceConfig, readConfigs } from '../src/config';
 import type { UnifiedConfig } from '../src/types';
 
@@ -230,9 +230,9 @@ describe('readConfigs', () => {
     const result = await readConfigs(configPaths);
 
     expect(result.prompts).toEqual([
-      `file://${path.resolve(path.dirname(configPaths[0]), 'prompt1.txt')}`,
+      `file://${resolve(dirname(configPaths[0]), 'prompt1.txt')}`,
       'prompt2',
-      `file://${path.resolve(path.dirname(configPaths[1]), 'prompt3.txt')}`,
+      `file://${resolve(dirname(configPaths[1]), 'prompt3.txt')}`,
       'prompt4',
     ]);
   });
@@ -266,7 +266,7 @@ describe('readConfigs', () => {
 
     expect(result.prompts).toEqual([
       'prompt1',
-      `file://${path.resolve(path.dirname(configPaths[0]), 'prompt2.txt')}`,
+      `file://${resolve(dirname(configPaths[0]), 'prompt2.txt')}`,
       'prompt3',
       'prompt4',
     ]);

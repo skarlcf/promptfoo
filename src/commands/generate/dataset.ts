@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import type { Command } from 'commander';
-import * as fs from 'fs';
+import { writeFileSync, readFileSync } from 'fs';
 import yaml from 'js-yaml';
 import { disableCache } from '../../cache';
 import { resolveConfigs } from '../../config';
@@ -62,7 +62,7 @@ async function doGenerateDataset(options: DatasetGenerateOptions): Promise<void>
   const configAddition = { tests: results.map((result) => ({ vars: result })) };
   const yamlString = yaml.dump(configAddition);
   if (options.output) {
-    fs.writeFileSync(options.output, yamlString);
+    writeFileSync(options.output, yamlString);
     printBorder();
     logger.info(`Wrote ${results.length} new test cases to ${options.output}`);
     printBorder();
@@ -75,9 +75,9 @@ async function doGenerateDataset(options: DatasetGenerateOptions): Promise<void>
 
   printBorder();
   if (options.write && configPath) {
-    const existingConfig = yaml.load(fs.readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>;
+    const existingConfig = yaml.load(readFileSync(configPath, 'utf8')) as Partial<UnifiedConfig>;
     existingConfig.tests = [...(existingConfig.tests || []), ...configAddition.tests];
-    fs.writeFileSync(configPath, yaml.dump(existingConfig));
+    writeFileSync(configPath, yaml.dump(existingConfig));
     logger.info(`Wrote ${results.length} new test cases to ${configPath}`);
     logger.info(chalk.green(`Run ${chalk.bold('promptfoo eval')} to run the generated tests`));
   } else {

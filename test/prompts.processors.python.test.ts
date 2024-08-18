@@ -1,5 +1,5 @@
 import dedent from 'dedent';
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import {
   processPythonFile,
   pythonPromptFunction,
@@ -17,7 +17,7 @@ jest.mock('../src/prompts/processors/python', () => {
 });
 
 describe('processPythonFile', () => {
-  const mockReadFileSync = jest.mocked(fs.readFileSync);
+  const mockReadFileSync = jest.mocked(readFileSync);
 
   it('should process a valid Python file without a function name or label', () => {
     const filePath = 'file.py';

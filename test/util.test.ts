@@ -1,8 +1,8 @@
-import * as fs from 'fs';
+import fs from 'fs';
 import { globSync } from 'glob';
-import * as path from 'path';
+import { resolve, join } from 'path';
 import cliState from '../src/cliState';
-import * as googleSheets from '../src/googleSheets';
+import { writeCsvToGoogleSheet } from '../src/googleSheets';
 import type { ApiProvider, EvaluateResult, EvaluateTable, TestCase } from '../src/types';
 import {
   maybeLoadFromExternalFile,
@@ -99,7 +99,7 @@ describe('maybeLoadFromExternalFile', () => {
 
     maybeLoadFromExternalFile('file://test.txt');
 
-    const expectedPath = path.resolve(basePath, 'test.txt');
+    const expectedPath = resolve(basePath, 'test.txt');
     expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
     expect(fs.readFileSync).toHaveBeenCalledWith(expectedPath, 'utf8');
 
@@ -113,7 +113,7 @@ describe('maybeLoadFromExternalFile', () => {
 
     maybeLoadFromExternalFile('file://test.txt');
 
-    const expectedPath = path.resolve(basePath, 'test.txt');
+    const expectedPath = resolve(basePath, 'test.txt');
     expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
     expect(fs.readFileSync).toHaveBeenCalledWith(expectedPath, 'utf8');
 
@@ -127,7 +127,7 @@ describe('maybeLoadFromExternalFile', () => {
 
     maybeLoadFromExternalFile('file:///absolute/path/test.txt');
 
-    const expectedPath = path.resolve('/absolute/path/test.txt');
+    const expectedPath = resolve('/absolute/path/test.txt');
     expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
     expect(fs.readFileSync).toHaveBeenCalledWith(expectedPath, 'utf8');
 
@@ -142,9 +142,9 @@ describe('maybeLoadFromExternalFile', () => {
     maybeLoadFromExternalFile(['file://test1.txt', 'file://test2.txt', 'file://test3.txt']);
 
     expect(fs.existsSync).toHaveBeenCalledTimes(3);
-    expect(fs.existsSync).toHaveBeenNthCalledWith(1, path.resolve(basePath, 'test1.txt'));
-    expect(fs.existsSync).toHaveBeenNthCalledWith(2, path.resolve(basePath, 'test2.txt'));
-    expect(fs.existsSync).toHaveBeenNthCalledWith(3, path.resolve(basePath, 'test3.txt'));
+    expect(fs.existsSync).toHaveBeenNthCalledWith(1, resolve(basePath, 'test1.txt'));
+    expect(fs.existsSync).toHaveBeenNthCalledWith(2, resolve(basePath, 'test2.txt'));
+    expect(fs.existsSync).toHaveBeenNthCalledWith(3, resolve(basePath, 'test3.txt'));
 
     cliState.basePath = undefined;
   });
@@ -526,7 +526,7 @@ describe('util', () => {
 
       await writeOutput(outputPath, evalId, results, config, shareableUrl);
 
-      expect(googleSheets.writeCsvToGoogleSheet).toHaveBeenCalledTimes(1);
+      expect(writeCsvToGoogleSheet).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -557,7 +557,7 @@ describe('util', () => {
 
   it('readFilters', async () => {
     const mockFilter = jest.fn();
-    jest.doMock(path.resolve('filter.js'), () => mockFilter, { virtual: true });
+    jest.doMock(resolve('filter.js'), () => mockFilter, { virtual: true });
 
     jest.mocked(globSync).mockImplementation((pathOrGlob) => [pathOrGlob].flat());
 
@@ -693,7 +693,7 @@ describe('util', () => {
         extension: '.txt',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('/base', 'file.txt'),
+        filePath: join('/base', 'file.txt'),
       });
     });
 
@@ -703,7 +703,7 @@ describe('util', () => {
         extension: '.py',
         functionName: 'myFunction',
         isPathPattern: false,
-        filePath: path.join('/base', 'file.py'),
+        filePath: join('/base', 'file.py'),
       });
     });
 
@@ -713,7 +713,7 @@ describe('util', () => {
         extension: undefined,
         functionName: undefined,
         isPathPattern: true,
-        filePath: path.join('/base', 'dir'),
+        filePath: join('/base', 'dir'),
       });
     });
 
@@ -725,7 +725,7 @@ describe('util', () => {
         extension: '.js',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('/base', 'nonexistent.js'),
+        filePath: join('/base', 'nonexistent.js'),
       });
     });
 
@@ -744,7 +744,7 @@ describe('util', () => {
         extension: '',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('/base', 'file'),
+        filePath: join('/base', 'file'),
       });
     });
 
@@ -754,7 +754,7 @@ describe('util', () => {
         extension: '.txt',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('./base', 'file.txt'),
+        filePath: join('./base', 'file.txt'),
       });
     });
 
@@ -765,7 +765,7 @@ describe('util', () => {
         extension: '.txt',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('/base', 'file.txt'),
+        filePath: join('/base', 'file.txt'),
       });
       delete process.env.FILE_PATH;
     });
@@ -776,7 +776,7 @@ describe('util', () => {
         extension: undefined,
         functionName: undefined,
         isPathPattern: true,
-        filePath: path.join('/base', '*.js'),
+        filePath: join('/base', '*.js'),
       });
     });
 
@@ -786,7 +786,7 @@ describe('util', () => {
         extension: '.py',
         functionName: 'func',
         isPathPattern: false,
-        filePath: path.join('/base', 'dir/subdir/file.py'),
+        filePath: join('/base', 'dir/subdir/file.py'),
       });
     });
 
@@ -796,7 +796,7 @@ describe('util', () => {
         extension: '.customext',
         functionName: undefined,
         isPathPattern: false,
-        filePath: path.join('/base', 'file.customext'),
+        filePath: join('/base', 'file.customext'),
       });
     });
 
@@ -806,7 +806,7 @@ describe('util', () => {
         extension: '.py',
         functionName: 'func',
         isPathPattern: false,
-        filePath: path.join('/base', 'a/b/c/d/e/f/g/file.py'),
+        filePath: join('/base', 'a/b/c/d/e/f/g/file.py'),
       });
     });
 
@@ -816,7 +816,7 @@ describe('util', () => {
         extension: undefined,
         functionName: undefined,
         isPathPattern: true,
-        filePath: path.join('/base', 'a/b/c/d/e/f/g'),
+        filePath: join('/base', 'a/b/c/d/e/f/g'),
       });
     });
 

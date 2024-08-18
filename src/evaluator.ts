@@ -2,7 +2,7 @@ import async from 'async';
 import chalk from 'chalk';
 import type { MultiBar, SingleBar } from 'cli-progress';
 import { globSync } from 'glob';
-import * as path from 'path';
+import { resolve } from 'path';
 import readline from 'readline';
 import invariant from 'tiny-invariant';
 import { runAssertions, runCompareAssertion } from './assertions';
@@ -69,7 +69,7 @@ export function generateVarCombinations(
 
     if (typeof vars[key] === 'string' && vars[key].startsWith('file://')) {
       const filePath = vars[key].slice('file://'.length);
-      const resolvedPath = path.resolve(cliState.basePath || '', filePath);
+      const resolvedPath = resolve(cliState.basePath || '', filePath);
       const filePaths = globSync(resolvedPath.replace(/\\/g, '/'));
       values = filePaths.map((path: string) => `file://${path}`);
       if (values.length === 0) {

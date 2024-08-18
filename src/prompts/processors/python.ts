@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import type { Options as PythonShellOptions } from 'python-shell';
 import { PythonShell } from 'python-shell';
 import invariant from 'tiny-invariant';
@@ -80,7 +80,7 @@ export function processPythonFile(
   prompt: Partial<Prompt>,
   functionName: string | undefined,
 ): Prompt[] {
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const fileContent = readFileSync(filePath, 'utf-8');
   const label =
     prompt.label ?? (functionName ? `${filePath}:${functionName}` : `${filePath}: ${fileContent}`);
   return [

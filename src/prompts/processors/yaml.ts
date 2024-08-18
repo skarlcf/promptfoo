@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import type { Prompt } from '../../types';
 
 /**
@@ -13,7 +13,7 @@ import type { Prompt } from '../../types';
  */
 export function processYamlFile(filePath: string, prompt: Partial<Prompt>): Prompt[] {
   // Yaml is parsed later - just pass it through.
-  const fileContents = fs.readFileSync(filePath, 'utf8');
+  const fileContents = readFileSync(filePath, 'utf8');
   return [
     {
       raw: fileContents,

@@ -1,11 +1,11 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import { PROMPT_DELIMITER } from '../src/prompts/constants';
 import { processTxtFile } from '../src/prompts/processors/text';
 
 jest.mock('fs');
 
 describe('processTxtFile', () => {
-  const mockReadFileSync = jest.mocked(fs.readFileSync);
+  const mockReadFileSync = jest.mocked(readFileSync);
 
   beforeEach(() => {
     jest.clearAllMocks();

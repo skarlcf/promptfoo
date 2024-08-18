@@ -13,7 +13,11 @@ import {
 } from './providers/azureopenai';
 import { BAMChatProvider, BAMEmbeddingProvider } from './providers/bam';
 import { AwsBedrockCompletionProvider, AwsBedrockEmbeddingProvider } from './providers/bedrock';
-import * as CloudflareAiProviders from './providers/cloudflare-ai';
+import {
+  CloudflareAiChatCompletionProvider,
+  CloudflareAiEmbeddingProvider,
+  CloudflareAiCompletionProvider,
+} from './providers/cloudflare-ai';
 import { CohereChatCompletionProvider } from './providers/cohere';
 import { HttpProvider } from './providers/http';
 import {
@@ -275,20 +279,11 @@ export async function loadApiProvider(
     const deploymentName = splits[2];
 
     if (modelType === 'chat') {
-      ret = new CloudflareAiProviders.CloudflareAiChatCompletionProvider(
-        deploymentName,
-        providerOptions,
-      );
+      ret = new CloudflareAiChatCompletionProvider(deploymentName, providerOptions);
     } else if (modelType === 'embedding' || modelType === 'embeddings') {
-      ret = new CloudflareAiProviders.CloudflareAiEmbeddingProvider(
-        deploymentName,
-        providerOptions,
-      );
+      ret = new CloudflareAiEmbeddingProvider(deploymentName, providerOptions);
     } else if (modelType === 'completion') {
-      ret = new CloudflareAiProviders.CloudflareAiCompletionProvider(
-        deploymentName,
-        providerOptions,
-      );
+      ret = new CloudflareAiCompletionProvider(deploymentName, providerOptions);
     } else {
       throw new Error(
         `Unknown Cloudflare AI model type: ${modelType}. Use one of the following providers: cloudflare-ai:chat:<model name>, cloudflare-ai:completion:<model name>, cloudflare-ai:embedding:`,

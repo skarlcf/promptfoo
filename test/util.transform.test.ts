@@ -1,4 +1,4 @@
-import * as path from 'path';
+import { resolve } from 'path';
 import { runPython } from '../src/python/pythonUtils';
 import { transform } from '../src/util/transform';
 
@@ -45,7 +45,7 @@ describe('util', () => {
     it('transforms output using an imported function from a file', async () => {
       const output = 'hello';
       const context = { vars: { key: 'value' }, prompt: { id: '123' } };
-      jest.doMock(path.resolve('transform.js'), () => (output: string) => output.toUpperCase(), {
+      jest.doMock(resolve('transform.js'), () => (output: string) => output.toUpperCase(), {
         virtual: true,
       });
       const transformFunctionPath = 'file://transform.js';
@@ -65,7 +65,7 @@ describe('util', () => {
     it('throws error if file does not export a function', async () => {
       const output = 'test';
       const context = { vars: {}, prompt: {} };
-      jest.doMock(path.resolve('transform.js'), () => 'banana', { virtual: true });
+      jest.doMock(resolve('transform.js'), () => 'banana', { virtual: true });
       const transformFunctionPath = 'file://transform.js';
       await expect(transform(transformFunctionPath, output, context)).rejects.toThrow(
         'Transform transform.js must export a function, have a default export as a function, or export the specified function "undefined"',
@@ -107,7 +107,7 @@ describe('util', () => {
       const output = 'hello';
       const context = { vars: { key: 'value' }, prompt: { id: '123' } };
       jest.doMock(
-        path.resolve('transform.js'),
+        resolve('transform.js'),
         () => ({
           default: (output: string) => output.toUpperCase() + ' DEFAULT',
         }),
@@ -123,7 +123,7 @@ describe('util', () => {
       const output = 'hello';
       const context = { vars: { key: 'value' }, prompt: { id: '123' } };
       jest.doMock(
-        path.resolve('transform.js'),
+        resolve('transform.js'),
         () => ({
           namedFunction: (output: string) => output.toUpperCase() + ' NAMED',
         }),

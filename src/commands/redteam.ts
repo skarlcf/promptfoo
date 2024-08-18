@@ -8,8 +8,8 @@ import select from '@inquirer/select';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import dedent from 'dedent';
-import * as fs from 'fs';
-import * as path from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { getUserEmail, setUserEmail } from '../accounts';
 import { getEnvString } from '../envars';
 import { readGlobalConfig, writeGlobalConfigPartial } from '../globalConfig';
@@ -114,11 +114,11 @@ export async function redteamInit(directory: string | undefined) {
   await telemetry.send();
 
   const projectDir = directory || '.';
-  if (projectDir !== '.' && !fs.existsSync(projectDir)) {
-    fs.mkdirSync(projectDir, { recursive: true });
+  if (projectDir !== '.' && !existsSync(projectDir)) {
+    mkdirSync(projectDir, { recursive: true });
   }
 
-  const configPath = path.join(projectDir, 'promptfooconfig.yaml');
+  const configPath = join(projectDir, 'promptfooconfig.yaml');
 
   console.clear();
   logger.info(chalk.bold('Red Team Configuration\n'));
@@ -353,10 +353,10 @@ export async function redteamInit(directory: string | undefined) {
     prompts,
     providers,
   });
-  fs.writeFileSync(configPath, redteamConfig, 'utf8');
+  writeFileSync(configPath, redteamConfig, 'utf8');
 
   if (useCustomProvider) {
-    fs.writeFileSync(path.join(projectDir, 'chat.py'), CUSTOM_PROVIDER_TEMPLATE, 'utf8');
+    writeFileSync(join(projectDir, 'chat.py'), CUSTOM_PROVIDER_TEMPLATE, 'utf8');
   }
 
   console.clear();

@@ -1,5 +1,6 @@
 // @ts-check
 import eslint from '@eslint/js';
+import importPlugin from 'eslint-plugin-import';
 import jest from 'eslint-plugin-jest';
 import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
@@ -43,6 +44,7 @@ export default [
     },
     plugins: {
       'unused-imports': unusedImports,
+      import: importPlugin,
     },
     rules: {
       '@typescript-eslint/ban-ts-comment': 0,
@@ -68,6 +70,9 @@ export default [
       'no-useless-escape': 0,
       'prefer-const': 'error',
       'unused-imports/no-unused-imports': 'error',
+      'import/no-commonjs': 'error',
+      'import/no-namespace': 0,
+      'import/prefer-default-export': 0,
     },
   },
   {
@@ -76,6 +81,13 @@ export default [
       '@typescript-eslint/no-namespace': 0,
       '@typescript-eslint/no-var-requires': 0,
       '@typescript-eslint/no-unused-vars': 0,
+      'import/no-commonjs': 0,
+    },
+  },
+  {
+    files: ['**/*.js'],
+    rules: {
+      'import/no-commonjs': 0,
     },
   },
 ];

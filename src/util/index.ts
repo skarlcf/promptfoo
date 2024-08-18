@@ -4,11 +4,24 @@ import dedent from 'dedent';
 import dotenv from 'dotenv';
 import { desc, eq, like, and, sql } from 'drizzle-orm';
 import deepEqual from 'fast-deep-equal';
-import * as fs from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  utimesSync,
+  closeSync,
+  openSync,
+  readdirSync,
+  statSync,
+  realpathSync,
+  cpSync,
+  unlinkSync,
+} from 'fs';
 import { globSync } from 'glob';
 import yaml from 'js-yaml';
 import nunjucks from 'nunjucks';
-import * as path from 'path';
+import { extname, dirname, parse, join, resolve, relative, isAbsolute } from 'path';
 import invariant from 'tiny-invariant';
 import { getAuthor } from '../accounts';
 import cliState from '../cliState';
@@ -101,7 +114,7 @@ export async function writeOutput(
   }
 
   const { data: outputExtension } = OutputFileExtension.safeParse(
-    path.extname(outputPath).slice(1).toLowerCase(),
+    extname(outputPath).slice(1).toLowerCase(),
   );
   invariant(
     outputExtension,
@@ -109,9 +122,9 @@ export async function writeOutput(
   );
 
   // Ensure the directory exists
-  const outputDir = path.dirname(outputPath);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
+  const outputDir = dirname(outputPath);
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true });
   }
 
   if (outputExtension === 'csv') {
@@ -122,16 +135,16 @@ export async function writeOutput(
       ],
       ...results.table.body.map((row) => [...row.vars, ...row.outputs.map(outputToSimpleString)]),
     ]);
-    fs.writeFileSync(outputPath, csvOutput);
+    writeFileSync(outputPath, csvOutput);
   } else if (outputExtension === 'json') {
-    fs.writeFileSync(
+    writeFileSync(
       outputPath,
       JSON.stringify({ evalId, results, config, shareableUrl } satisfies OutputFile, null, 2),
     );
   } else if (outputExtension === 'yaml' || outputExtension === 'yml' || outputExtension === 'txt') {
-    fs.writeFileSync(outputPath, yaml.dump({ results, config, shareableUrl } as OutputFile));
+    writeFileSync(outputPath, yaml.dump({ results, config, shareableUrl } as OutputFile));
   } else if (outputExtension === 'html') {
-    const template = fs.readFileSync(`${getDirectory()}/tableOutput.html`, 'utf-8');
+    const template = readFileSync(`${getDirectory()}/tableOutput.html`, 'utf-8');
     const table = [
       [
         ...results.table.head.vars,
@@ -144,7 +157,7 @@ export async function writeOutput(
       table,
       results: results.results,
     });
-    fs.writeFileSync(outputPath, htmlOutput);
+    writeFileSync(outputPath, htmlOutput);
   }
 }
 
@@ -165,11 +178,11 @@ export function sha256(str: string) {
 }
 
 export async function readOutput(outputPath: string): Promise<OutputFile> {
-  const ext = path.parse(outputPath).ext.slice(1);
+  const ext = parse(outputPath).ext.slice(1);
 
   switch (ext) {
     case 'json':
-      return JSON.parse(fs.readFileSync(outputPath, 'utf-8')) as OutputFile;
+      return JSON.parse(readFileSync(outputPath, 'utf-8')) as OutputFile;
     default:
       throw new Error(`Unsupported output file format: ${ext} currently only supports json`);
   }
@@ -180,7 +193,7 @@ export async function readOutput(outputPath: string): Promise<OutputFile> {
  * @deprecated Use readLatestResults directly instead.
  */
 export function getLatestResultsPath(): string {
-  return path.join(getConfigDirectoryPath(), 'output', 'latest.json');
+  return join(getConfigDirectoryPath(), 'output', 'latest.json');
 }
 
 export async function writeResultsToDatabase(
@@ -273,9 +286,9 @@ export async function writeResultsToDatabase(
   const filePath = getDbSignalPath();
   try {
     const now = new Date();
-    fs.utimesSync(filePath, now, now);
+    utimesSync(filePath, now, now);
   } catch (err) {
-    fs.closeSync(fs.openSync(filePath, 'w'));
+    closeSync(openSync(filePath, 'w'));
   }
 
   return evalId;
@@ -330,15 +343,15 @@ export function listPreviousResults(
  * @deprecated Used only for migration to sqlite
  */
 export function listPreviousResultFilenames_fileSystem(): string[] {
-  const directory = path.join(getConfigDirectoryPath(), 'output');
-  if (!fs.existsSync(directory)) {
+  const directory = join(getConfigDirectoryPath(), 'output');
+  if (!existsSync(directory)) {
     return [];
   }
-  const files = fs.readdirSync(directory);
+  const files = readdirSync(directory);
   const resultsFiles = files.filter((file) => file.startsWith('eval-') && file.endsWith('.json'));
   return resultsFiles.sort((a, b) => {
-    const statA = fs.statSync(path.join(directory, a));
-    const statB = fs.statSync(path.join(directory, b));
+    const statA = statSync(join(directory, a));
+    const statB = statSync(join(directory, b));
     return statA.birthtime.getTime() - statB.birthtime.getTime(); // sort in ascending order
   });
 }
@@ -349,15 +362,15 @@ const resultsCache: { [fileName: string]: ResultsFile | undefined } = {};
  * @deprecated Used only for migration to sqlite
  */
 export function listPreviousResults_fileSystem(): { fileName: string; description?: string }[] {
-  const directory = path.join(getConfigDirectoryPath(), 'output');
-  if (!fs.existsSync(directory)) {
+  const directory = join(getConfigDirectoryPath(), 'output');
+  if (!existsSync(directory)) {
     return [];
   }
   const sortedFiles = listPreviousResultFilenames_fileSystem();
   return sortedFiles.map((fileName) => {
     if (!resultsCache[fileName]) {
       try {
-        const fileContents = fs.readFileSync(path.join(directory, fileName), 'utf8');
+        const fileContents = readFileSync(join(directory, fileName), 'utf8');
         const data = yaml.load(fileContents) as ResultsFile;
         resultsCache[fileName] = data;
       } catch (error) {
@@ -404,12 +417,10 @@ export function dateToFilename(date: Date) {
 export function readResult_fileSystem(
   name: string,
 ): { id: string; result: ResultsFile; createdAt: Date } | undefined {
-  const resultsDirectory = path.join(getConfigDirectoryPath(), 'output');
-  const resultsPath = path.join(resultsDirectory, name);
+  const resultsDirectory = join(getConfigDirectoryPath(), 'output');
+  const resultsPath = join(resultsDirectory, name);
   try {
-    const result = JSON.parse(
-      fs.readFileSync(fs.realpathSync(resultsPath), 'utf-8'),
-    ) as ResultsFile;
+    const result = JSON.parse(readFileSync(realpathSync(resultsPath), 'utf-8')) as ResultsFile;
     const createdAt = filenameToDate(name);
     return {
       id: sha256(JSON.stringify(result.config)),
@@ -442,13 +453,13 @@ export async function migrateResultsFromFileSystemToDatabase() {
   logger.info('This is a one-time operation and may take a minute...');
   attemptedMigration = true;
 
-  const outputDir = path.join(getConfigDirectoryPath(true /* createIfNotExists */), 'output');
+  const outputDir = join(getConfigDirectoryPath(true /* createIfNotExists */), 'output');
   const backupDir = `${outputDir}-backup-${new Date()
     .toISOString()
     .slice(0, 10)
     .replace(/-/g, '')}`;
   try {
-    fs.cpSync(outputDir, backupDir, { recursive: true });
+    cpSync(outputDir, backupDir, { recursive: true });
     logger.info(`Backup of output directory created at ${backupDir}`);
   } catch (backupError) {
     logger.error(`Failed to create backup of output directory: ${backupError}`);
@@ -466,7 +477,7 @@ export async function migrateResultsFromFileSystemToDatabase() {
       );
       logger.debug(`Migrated ${fileName} to database.`);
       try {
-        fs.unlinkSync(path.join(outputDir, fileName));
+        unlinkSync(join(outputDir, fileName));
       } catch (err) {
         logger.warn(`Failed to delete ${fileName} after migration: ${err}`);
       }
@@ -476,7 +487,7 @@ export async function migrateResultsFromFileSystemToDatabase() {
   });
   await Promise.all(migrationPromises);
   try {
-    fs.unlinkSync(getLatestResultsPath());
+    unlinkSync(getLatestResultsPath());
   } catch (err) {
     logger.warn(`Failed to delete latest.json: ${err}`);
   }
@@ -488,7 +499,7 @@ const RESULT_HISTORY_LENGTH = getEnvInt('RESULT_HISTORY_LENGTH', DEFAULT_QUERY_L
 export function cleanupOldFileResults(remaining = RESULT_HISTORY_LENGTH) {
   const sortedFilenames = listPreviousResultFilenames_fileSystem();
   for (let i = 0; i < sortedFilenames.length - remaining; i++) {
-    fs.unlinkSync(path.join(getConfigDirectoryPath(), 'output', sortedFilenames[i]));
+    unlinkSync(join(getConfigDirectoryPath(), 'output', sortedFilenames[i]));
   }
 }
 
@@ -892,12 +903,12 @@ export async function readFilters(
 ): Promise<NunjucksFilterMap> {
   const ret: NunjucksFilterMap = {};
   for (const [name, filterPath] of Object.entries(filters)) {
-    const globPath = path.join(basePath, filterPath);
+    const globPath = join(basePath, filterPath);
     const filePaths = globSync(globPath, {
       windowsPathsNoEscape: true,
     });
     for (const filePath of filePaths) {
-      const finalPath = path.resolve(filePath);
+      const finalPath = resolve(filePath);
       ret[name] = await importModule(finalPath);
     }
   }
@@ -1058,18 +1069,18 @@ export function parsePathOrGlob(
   if (promptPath.startsWith('file://')) {
     promptPath = promptPath.slice(7);
   }
-  const filePath = path.resolve(basePath, promptPath);
+  const filePath = resolve(basePath, promptPath);
 
   let stats;
   try {
-    stats = fs.statSync(filePath);
+    stats = statSync(filePath);
   } catch (err) {
     if (getEnvBool('PROMPTFOO_STRICT_FILES')) {
       throw err;
     }
   }
 
-  let filename = path.relative(basePath, filePath);
+  let filename = relative(basePath, filePath);
   let functionName: string | undefined;
 
   if (filename.includes(':')) {
@@ -1080,13 +1091,13 @@ export function parsePathOrGlob(
   }
 
   const isPathPattern = stats?.isDirectory() || /[*?{}\[\]]/.test(filePath); // glob pattern
-  const safeFilename = path.relative(
+  const safeFilename = relative(
     basePath,
-    path.isAbsolute(filename) ? filename : path.resolve(basePath, filename),
+    isAbsolute(filename) ? filename : resolve(basePath, filename),
   );
   return {
-    extension: isPathPattern ? undefined : path.parse(safeFilename).ext,
-    filePath: safeFilename.startsWith(basePath) ? safeFilename : path.join(basePath, safeFilename),
+    extension: isPathPattern ? undefined : parse(safeFilename).ext,
+    filePath: safeFilename.startsWith(basePath) ? safeFilename : join(basePath, safeFilename),
     functionName,
     isPathPattern,
   };
@@ -1119,12 +1130,12 @@ export function maybeLoadFromExternalFile(filePath: string | object | Function |
     return filePath;
   }
 
-  const finalPath = path.resolve(cliState.basePath || '', filePath.slice('file://'.length));
-  if (!fs.existsSync(finalPath)) {
+  const finalPath = resolve(cliState.basePath || '', filePath.slice('file://'.length));
+  if (!existsSync(finalPath)) {
     throw new Error(`File does not exist: ${finalPath}`);
   }
 
-  const contents = fs.readFileSync(finalPath, 'utf8');
+  const contents = readFileSync(finalPath, 'utf8');
   if (finalPath.endsWith('.json')) {
     return JSON.parse(contents);
   }

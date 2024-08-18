@@ -1,8 +1,8 @@
 import $RefParser from '@apidevtools/json-schema-ref-parser';
-import * as fs from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { globSync } from 'glob';
 import yaml from 'js-yaml';
-import * as path from 'path';
+import { parse, dirname, resolve, join } from 'path';
 import invariant from 'tiny-invariant';
 import { readAssertions } from './assertions';
 import { validateAssertions } from './assertions/validateAssertions';
@@ -135,9 +135,9 @@ export async function dereferenceConfig(rawConfig: UnifiedConfig): Promise<Unifi
 }
 
 export async function readConfig(configPath: string): Promise<UnifiedConfig> {
-  const ext = path.parse(configPath).ext;
+  const ext = parse(configPath).ext;
   if (ext === '.json' || ext === '.yaml' || ext === '.yml') {
-    const rawConfig = yaml.load(fs.readFileSync(configPath, 'utf-8')) as UnifiedConfig;
+    const rawConfig = yaml.load(readFileSync(configPath, 'utf-8')) as UnifiedConfig;
     return dereferenceConfig(rawConfig || {});
   } else if (isJavascriptFile(configPath)) {
     return (await importModule(configPath)) as UnifiedConfig;
@@ -146,7 +146,7 @@ export async function readConfig(configPath: string): Promise<UnifiedConfig> {
 }
 
 export async function maybeReadConfig(configPath: string): Promise<UnifiedConfig | undefined> {
-  if (!fs.existsSync(configPath)) {
+  if (!existsSync(configPath)) {
     return undefined;
   }
   return readConfig(configPath);
@@ -198,7 +198,7 @@ export async function readConfigs(configPaths: string[]): Promise<UnifiedConfig>
   const tests: UnifiedConfig['tests'] = [];
   for (const config of configs) {
     if (typeof config.tests === 'string') {
-      const newTests = await readTests(config.tests, path.dirname(configPaths[0]));
+      const newTests = await readTests(config.tests, dirname(configPaths[0]));
       tests.push(...newTests);
     } else if (Array.isArray(config.tests)) {
       tests.push(...config.tests);
@@ -253,14 +253,13 @@ export async function readConfigs(configPaths: string[]): Promise<UnifiedConfig>
     if (typeof relativePath === 'string') {
       if (relativePath.startsWith('file://')) {
         relativePath =
-          'file://' + path.resolve(path.dirname(configPath), relativePath.slice('file://'.length));
+          'file://' + resolve(dirname(configPath), relativePath.slice('file://'.length));
       }
       return relativePath;
     } else if (typeof relativePath === 'object' && relativePath.id) {
       if (relativePath.id.startsWith('file://')) {
         relativePath.id =
-          'file://' +
-          path.resolve(path.dirname(configPath), relativePath.id.slice('file://'.length));
+          'file://' + resolve(dirname(configPath), relativePath.id.slice('file://'.length));
       }
       return relativePath;
     } else {
@@ -355,7 +354,7 @@ export async function resolveConfigs(
       process.exit(1);
     }
     const modelOutputs = JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), cmdObj.modelOutputs), 'utf8'),
+      readFileSync(join(process.cwd(), cmdObj.modelOutputs), 'utf8'),
     ) as string[] | { output: string; tags?: string[] }[];
     const assertions = await readAssertions(cmdObj.assertions);
     fileConfig.prompts = ['{{output}}'];
@@ -380,7 +379,7 @@ export async function resolveConfigs(
   }
 
   // Use basepath in cases where path was supplied in the config file
-  const basePath = configPaths ? path.dirname(configPaths[0]) : '';
+  const basePath = configPaths ? dirname(configPaths[0]) : '';
 
   const defaultTestRaw = fileConfig.defaultTest || defaultConfig.defaultTest;
   const config: Omit<UnifiedConfig, 'evaluateOptions' | 'commandLineOptions'> = {

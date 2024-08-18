@@ -1,7 +1,7 @@
 import child_process from 'child_process';
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import fetch from 'node-fetch';
-import * as path from 'path';
+import { resolve } from 'path';
 import Stream from 'stream';
 import { clearCache, disableCache, enableCache } from '../src/cache';
 import { importModule } from '../src/esm';
@@ -772,12 +772,12 @@ describe('loadApiProvider', () => {
     const mockYamlContent = `id: 'openai:gpt-4'
 config:
   key: 'value'`;
-    jest.mocked(fs.readFileSync).mockReturnValueOnce(mockYamlContent);
+    jest.mocked(readFileSync).mockReturnValueOnce(mockYamlContent);
 
     const provider = await loadApiProvider('file://path/to/mock-provider-file.yaml');
     expect(provider.id()).toBe('openai:gpt-4');
-    expect(fs.readFileSync).toHaveBeenCalledTimes(1);
-    expect(fs.readFileSync).toHaveBeenCalledWith(
+    expect(readFileSync).toHaveBeenCalledTimes(1);
+    expect(readFileSync).toHaveBeenCalledWith(
       expect.stringMatching(/path[\\\/]to[\\\/]mock-provider-file\.yaml/),
       'utf8',
     );
@@ -790,11 +790,11 @@ config:
     "key": "value"
   }
 }`;
-    jest.mocked(fs.readFileSync).mockReturnValueOnce(mockJsonContent);
+    jest.mocked(readFileSync).mockReturnValueOnce(mockJsonContent);
 
     const provider = await loadApiProvider('file://path/to/mock-provider-file.json');
     expect(provider.id()).toBe('openai:gpt-4');
-    expect(fs.readFileSync).toHaveBeenCalledWith(
+    expect(readFileSync).toHaveBeenCalledWith(
       expect.stringMatching(/path[\\\/]to[\\\/]mock-provider-file\.json/),
       'utf8',
     );
@@ -1089,7 +1089,7 @@ config:
 
     jest.mocked(importModule).mockResolvedValue(CustomApiProvider);
     const providers = await loadApiProviders(providerPath);
-    expect(importModule).toHaveBeenCalledWith(path.resolve('path/to/file.js'));
+    expect(importModule).toHaveBeenCalledWith(resolve('path/to/file.js'));
     expect(providers).toHaveLength(1);
     expect(providers[0].id()).toBe('custom-api-provider');
     const response = await providers[0].callApi('Test input');

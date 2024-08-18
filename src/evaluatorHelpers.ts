@@ -1,6 +1,6 @@
-import * as fs from 'fs';
+import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
-import * as path from 'path';
+import { resolve } from 'path';
 import invariant from 'tiny-invariant';
 import cliState from './cliState';
 import { getEnvBool } from './envars';
@@ -58,7 +58,7 @@ export async function renderPrompt(
   for (const [varName, value] of Object.entries(vars)) {
     if (typeof value === 'string' && value.startsWith('file://')) {
       const basePath = cliState.basePath || '';
-      const filePath = path.resolve(process.cwd(), basePath, value.slice('file://'.length));
+      const filePath = resolve(process.cwd(), basePath, value.slice('file://'.length));
       const fileExtension = filePath.split('.').pop();
 
       logger.debug(`Loading var ${varName} from file: ${filePath}`);
@@ -93,10 +93,10 @@ export async function renderPrompt(
         vars[varName] = pythonScriptOutput.output.trim();
       } else if (fileExtension === 'yaml' || fileExtension === 'yml') {
         vars[varName] = JSON.stringify(
-          yaml.load(fs.readFileSync(filePath, 'utf8')) as string | object,
+          yaml.load(readFileSync(filePath, 'utf8')) as string | object,
         );
       } else {
-        vars[varName] = fs.readFileSync(filePath, 'utf8').trim();
+        vars[varName] = readFileSync(filePath, 'utf8').trim();
       }
     }
   }
