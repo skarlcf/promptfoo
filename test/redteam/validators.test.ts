@@ -17,18 +17,15 @@ import {
 } from '../../src/validators/redteam';
 import { transformCustomPlugin } from '../../src/validators/redteam';
 
-// Mock the fs module
 jest.mock('node:fs', () => ({
   ...jest.requireActual('node:fs'),
   readFileSync: jest.fn(),
 }));
 
-// Mock the importModule function
 jest.mock('../../src/esm', () => ({
   importModule: jest.fn(),
 }));
 
-// Mock the cliState
 jest.mock('../../src/cliState', () => ({
   basePath: '/mock/base/path',
 }));
@@ -198,7 +195,7 @@ describe('RedteamPluginSchema', () => {
       expect.objectContaining({
         data: {
           id: 'hijacking',
-          numTests: expect.any(Number), // The schema might be adding a default value
+          numTests: expect.any(Number),
         },
         success: true,
       }),
@@ -225,7 +222,6 @@ describe('RedteamPluginSchema', () => {
     const input = {
       id: 'custom-plugin',
       numTests: 5,
-      // Missing required fields: template and grader
     };
     expect(RedteamPluginSchema.safeParse(input)).toEqual(
       expect.objectContaining({
