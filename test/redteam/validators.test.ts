@@ -354,7 +354,7 @@ describe('RedteamConfigSchema', () => {
 
   it('should reject non-integer numTests', () => {
     const input = {
-      numTests: 3.5,
+      numTests: 1.5,
     };
     expect(RedteamConfigSchema.safeParse(input)).toEqual(
       expect.objectContaining({
@@ -509,14 +509,14 @@ describe('RedteamConfigSchema', () => {
   it('should accept a provider string', () => {
     const input = {
       plugins: ['overreliance'],
-      provider: 'openai:gpt-3.5-turbo',
+      provider: 'openai:gpt-4o-mini',
       strategies: ['jailbreak'],
     };
     expect(RedteamConfigSchema.safeParse(input)).toEqual(
       expect.objectContaining({
         data: {
           plugins: [{ id: 'overreliance', numTests: undefined }],
-          provider: 'openai:gpt-3.5-turbo',
+          provider: 'openai:gpt-4o-mini',
           strategies: [{ id: 'jailbreak' }],
         },
         success: true,
