@@ -38,7 +38,7 @@ const RedteamPluginObjectSchema = z.object({
   config: z.record(z.unknown()).optional().describe('Plugin-specific configuration'),
 });
 
-const RedteamCustomPluginSchema = z.object({
+export const RedteamCustomPluginSchema = z.object({
   id: z.string().describe('Path to the custom plugin'),
   numTests: z
     .number()
