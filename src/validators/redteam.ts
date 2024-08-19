@@ -52,6 +52,28 @@ const RedteamCustomPluginSchema = z.object({
 });
 
 /**
+ * Transforms a custom plugin configuration file into a RedteamCustomPlugin object.
+ *
+ * @param configPath - The path to the custom plugin configuration file, prefixed with 'file://'.
+ * @returns A promise that resolves to a RedteamCustomPlugin object.
+ * @throws Error if the file type is unsupported.
+ */
+export async function transformCustomPlugin(
+  configPath: string,
+): Promise<z.infer<typeof RedteamCustomPluginSchema>> {
+  const filePath = configPath.slice('file://'.length);
+  const fullPath = path.join(cliState.basePath || '', filePath);
+  const content = fs.readFileSync(fullPath, 'utf-8');
+  if (isJavascriptFile(fullPath)) {
+    const plugin = await importModule(fullPath);
+    return RedteamCustomPluginSchema.parse(plugin);
+  } else if (['.json', '.yaml', '.yml'].some((ext) => filePath.endsWith(ext))) {
+    return RedteamCustomPluginSchema.parse(yaml.load(content));
+  }
+  throw new Error(`Unsupported file type for custom plugin: ${filePath}`);
+}
+
+/**
  * Schema for individual redteam plugins or their shorthand.
  */
 export const RedteamPluginSchema = z.union([
@@ -63,18 +85,7 @@ export const RedteamPluginSchema = z.union([
   z
     .string()
     .startsWith('file://')
-    .transform(async (configPath) => {
-      const filePath = configPath.slice(7);
-      const fullPath = path.join(cliState.basePath || '', filePath);
-      const content = fs.readFileSync(fullPath, 'utf-8');
-      if (isJavascriptFile(fullPath)) {
-        const plugin = await importModule(fullPath);
-        return RedteamCustomPluginSchema.parse(plugin);
-      } else if (['.json', '.yaml', '.yml'].some((ext) => filePath.endsWith(ext))) {
-        return RedteamCustomPluginSchema.parse(yaml.load(content));
-      }
-      throw new Error(`Unsupported file type for custom plugin: ${filePath}`);
-    })
+    .transform(transformCustomPlugin)
     .describe('Path to a custom plugin file'),
 ]);
 

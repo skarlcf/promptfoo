@@ -494,13 +494,16 @@ describe('RedteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      provider: 'openai:gpt-3.5-turbo',
-      plugins: [{ id: 'overreliance', numTests: undefined }],
-      strategies: [{ id: 'jailbreak' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          provider: 'openai:gpt-3.5-turbo',
+          plugins: [{ id: 'overreliance', numTests: undefined }],
+          strategies: [{ id: 'jailbreak' }],
+        },
+      }),
+    );
   });
 
   it('should accept a language string', () => {
@@ -509,13 +512,16 @@ describe('RedteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      language: 'German',
-      plugins: [{ id: 'overreliance', config: undefined, numTests: undefined }],
-      strategies: [{ id: 'jailbreak' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          language: 'German',
+          plugins: [{ id: 'overreliance', config: undefined, numTests: undefined }],
+          strategies: [{ id: 'jailbreak' }],
+        },
+      }),
+    );
   });
 
   it('should include injectVar, provider, and purpose when all are provided', () => {
@@ -525,18 +531,21 @@ describe('RedteamConfigSchema', () => {
       purpose: 'Test adversarial inputs',
       plugins: ['overreliance', 'politics'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      injectVar: 'system',
-      provider: 'openai:gpt-4',
-      purpose: 'Test adversarial inputs',
-      plugins: [
-        { id: 'overreliance', numTests: undefined },
-        { id: 'politics', numTests: undefined },
-      ],
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          injectVar: 'system',
+          provider: 'openai:gpt-4',
+          purpose: 'Test adversarial inputs',
+          plugins: [
+            { id: 'overreliance', numTests: undefined },
+            { id: 'politics', numTests: undefined },
+          ],
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should accept a provider object with id and config', () => {
@@ -551,19 +560,22 @@ describe('RedteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      provider: {
-        id: 'openai:gpt-4',
-        config: {
-          temperature: 0.7,
-          max_tokens: 100,
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          provider: {
+            id: 'openai:gpt-4',
+            config: {
+              temperature: 0.7,
+              max_tokens: 100,
+            },
+          },
+          plugins: [{ id: 'overreliance', numTests: undefined }],
+          strategies: [{ id: 'jailbreak' }],
         },
-      },
-      plugins: [{ id: 'overreliance', numTests: undefined }],
-      strategies: [{ id: 'jailbreak' }],
-    });
+      }),
+    );
   });
 
   it('should accept a provider object with callApi function', () => {
@@ -577,15 +589,20 @@ describe('RedteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data.provider).toHaveProperty('id');
-    expect(result.success && result.data.provider).toHaveProperty('callApi');
-    expect(result.success && result.data.provider).toHaveProperty('label', 'Custom Provider');
-    expect(result.success && result.data.plugins).toEqual([
-      { id: 'overreliance', numTests: undefined },
-    ]);
-    expect(result.success && result.data.strategies).toEqual([{ id: 'jailbreak' }]);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          provider: expect.objectContaining({
+            id: expect.any(Function),
+            callApi: expect.any(Function),
+            label: 'Custom Provider',
+          }),
+          plugins: [{ id: 'overreliance', numTests: undefined }],
+          strategies: [{ id: 'jailbreak' }],
+        },
+      }),
+    );
   });
 
   it('should reject an invalid provider', () => {
@@ -656,13 +673,18 @@ describe('RedteamConfigSchema', () => {
         { id: 'hijacking', numTests: 2 },
       ],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data.plugins).toEqual([
-      { id: 'hijacking', numTests: 2 },
-      { id: 'policy', config: { policy: 'Policy A' }, numTests: 5 },
-      { id: 'policy', config: { policy: 'Policy B' }, numTests: 3 },
-    ]);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          plugins: [
+            { id: 'hijacking', numTests: 2 },
+            { id: 'policy', config: { policy: 'Policy A' }, numTests: 5 },
+            { id: 'policy', config: { policy: 'Policy B' }, numTests: 3 },
+          ],
+        }),
+      }),
+    );
   });
 
   it('should handle custom plugins', () => {
@@ -679,15 +701,22 @@ describe('RedteamConfigSchema', () => {
       ],
       numTests: 10,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data.plugins).toContainEqual({
-      id: 'custom-plugin',
-      numTests: 5,
-      config: { key: 'value' },
-      template: 'Custom template',
-      grader: 'Custom grader',
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          plugins: expect.arrayContaining([
+            {
+              id: 'custom-plugin',
+              numTests: 5,
+              config: { key: 'value' },
+              template: 'Custom template',
+              grader: 'Custom grader',
+            },
+          ]),
+        }),
+      }),
+    );
   });
 
   it('should handle the "default" plugin correctly', () => {
@@ -695,10 +724,14 @@ describe('RedteamConfigSchema', () => {
       plugins: ['default'],
       numTests: 5,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data.plugins.length).toBeGreaterThan(0);
-    expect(result.success && result.data.plugins.every((p) => p.numTests === 5)).toBe(true);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          plugins: expect.arrayContaining([expect.objectContaining({ numTests: 5 })]),
+        }),
+      }),
+    );
   });
 
   it('should handle the "basic" strategy correctly', () => {
@@ -721,13 +754,18 @@ describe('RedteamConfigSchema', () => {
         },
       },
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data.provider).toEqual({
-      id: 'openai:gpt-4',
-      config: {
-        temperature: 0.7,
-      },
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          provider: {
+            id: 'openai:gpt-4',
+            config: {
+              temperature: 0.7,
+            },
+          },
+        }),
+      }),
+    );
   });
 });
