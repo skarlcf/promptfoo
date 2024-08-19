@@ -3,7 +3,7 @@ import cliProgress from 'cli-progress';
 import invariant from 'tiny-invariant';
 import logger from '../logger';
 import { loadApiProvider } from '../providers';
-import type { TestCaseWithPlugin } from '../types';
+import type { TestCase, TestCaseWithPlugin } from '../types';
 import { isApiProvider, isProviderOptions, type ApiProvider } from '../types';
 import type { SynthesizeOptions } from '../types/redteam';
 import { extractVariablesFromTemplates } from '../util/templates';
@@ -11,7 +11,12 @@ import { REDTEAM_MODEL, HARM_PLUGINS, PII_PLUGINS, ALIASED_PLUGIN_MAPPINGS } fro
 import { extractEntities } from './extraction/entities';
 import { extractSystemPurpose } from './extraction/purpose';
 import { Plugins } from './plugins';
+import { createCustomPlugin, CustomPlugin } from './plugins/custom';
 import { Strategies, validateStrategies } from './strategies';
+
+interface CustomPluginWithGenerate extends CustomPlugin {
+  generate: (...args: any[]) => Promise<any>;
+}
 
 // These plugins refer to a collection of tests.
 const categories = {
@@ -164,7 +169,31 @@ export async function synthesize({
 
   const testCases: TestCaseWithPlugin[] = [];
   for (const plugin of plugins) {
-    const { action } = Plugins.find((p) => p.key === plugin.id) || {};
+    let action;
+    let customPlugin: CustomPluginWithGenerate | null = null;
+
+    const builtInPlugin = Plugins.find((p) => p.key === plugin.id);
+    if (builtInPlugin) {
+      action = builtInPlugin.action;
+    } else {
+      // Assume it's a custom plugin if not found in built-in plugins
+      try {
+        logger.warn(`Creating custom plugin ${plugin.id}...`);
+        customPlugin = (await createCustomPlugin(
+          plugin,
+          redteamProvider,
+          purpose,
+          injectVar,
+        )) as CustomPluginWithGenerate;
+        logger.warn(`Created custom plugin ${plugin.id}`);
+        action = customPlugin.generate.bind(customPlugin);
+        logger.warn(`Bound action for ${plugin.id}`);
+      } catch (error) {
+        logger.error(`Failed to create custom plugin ${plugin.id}: ${error}`);
+        continue;
+      }
+    }
+
     if (action) {
       updateProgress();
       logger.debug(`Generating tests for ${plugin.id}...`);
@@ -173,7 +202,7 @@ export async function synthesize({
         ...(plugin.config || {}),
       });
       testCases.push(
-        ...pluginTests.map((t) => ({
+        ...pluginTests.map((t: TestCase) => ({
           ...t,
           metadata: {
             ...(t.metadata || {}),
@@ -183,7 +212,7 @@ export async function synthesize({
       );
       logger.debug(`Added ${pluginTests.length} ${plugin.id} test cases`);
     } else {
-      logger.error(`Plugin ${plugin.id} not found`);
+      logger.error(`Plugin ${plugin.id} not found and could not be created as a custom plugin`);
     }
   }
 

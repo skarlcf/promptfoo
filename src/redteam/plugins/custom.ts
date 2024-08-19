@@ -98,7 +98,7 @@ export async function createCustomPlugin(
     return new CustomPlugin(provider, purpose, injectVar, customConfig);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(errorMessage);
+    throw new Error(`Failed to create custom plugin: ${errorMessage}`);
   }
 }
 
