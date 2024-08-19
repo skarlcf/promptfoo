@@ -120,11 +120,14 @@ export async function doGenerateRedteam(options: RedteamGenerateOptions) {
     strategies: strategyObjs,
   };
   // maybe load plugins
-
-  const parsedConfig = RedteamConfigSchema.safeParse(config);
-  if (!parsedConfig.success) {
+  let parsedConfig;
+  try {
+    parsedConfig = await RedteamConfigSchema.parseAsync(config);
+  } catch (error) {
     logger.error('Invalid redteam configuration:');
-    logger.error(parsedConfig.error.toString());
+    if (error instanceof z.ZodError) {
+      logger.error(error.toString());
+    }
     throw new Error('Invalid redteam configuration');
   }
 
@@ -133,7 +136,7 @@ export async function doGenerateRedteam(options: RedteamGenerateOptions) {
     purpose,
     entities,
   } = await synthesize({
-    ...parsedConfig.data,
+    ...parsedConfig,
     language: config.language,
     numTests: config.numTests,
     prompts: testSuite.prompts.map((prompt) => prompt.raw),
@@ -268,23 +271,27 @@ export function generateRedteamCommand(
     )
     .option('--no-cache', 'Do not read or write results to disk cache', false)
     .option('--env-file <path>', 'Path to .env file')
-    .action((opts: Partial<RedteamGenerateOptions>): void => {
+    .action(async (opts: Partial<RedteamGenerateOptions>): Promise<void> => {
       try {
         let overrides: Record<string, any> = {};
         if (opts.plugins && opts.plugins.length > 0) {
-          const parsed = RedteamConfigSchema.safeParse({
-            plugins: opts.plugins,
-            strategies: opts.strategies,
-            numTests: opts.numTests,
-          });
-          if (!parsed.success) {
-            logger.error('Invalid options:');
-            parsed.error.errors.forEach((err: z.ZodIssue) => {
-              logger.error(`  ${err.path.join('.')}: ${err.message}`);
+          try {
+            overrides = await RedteamConfigSchema.parseAsync({
+              plugins: opts.plugins,
+              strategies: opts.strategies,
+              numTests: opts.numTests,
             });
+          } catch (error) {
+            if (error instanceof z.ZodError) {
+              logger.error('Invalid options:');
+              error.errors.forEach((err: z.ZodIssue) => {
+                logger.error(`  ${err.path.join('.')}: ${err.message}`);
+              });
+            } else {
+              logger.error('An unexpected error occurred:', error);
+            }
             process.exit(1);
           }
-          overrides = parsed.data;
         }
         if (!opts.write && !opts.output) {
           logger.info('No output file specified, writing to redteam.yaml in the current directory');
