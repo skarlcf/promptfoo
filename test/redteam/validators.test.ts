@@ -2,6 +2,7 @@ import * as yaml from 'js-yaml';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ZodError } from 'zod';
+import cliState from '../../src/cliState';
 import {
   ALL_PLUGINS as REDTEAM_ALL_PLUGINS,
   ALL_STRATEGIES as REDTEAM_ALL_STRATEGIES,
@@ -790,6 +791,8 @@ describe('RedteamConfigSchema', () => {
 describe('transformCustomPlugin', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset cliState.basePath before each test
+    cliState.basePath = '/mock/base/path';
   });
 
   it('should transform a JSON custom plugin', async () => {
@@ -885,6 +888,72 @@ describe('transformCustomPlugin', () => {
           path: ['grader'],
         }),
       ]),
+    );
+  });
+
+  it('should use cliState.basePath when it is set', async () => {
+    const mockPlugin = {
+      grader: 'Custom JSON grader',
+      id: 'custom-json-plugin',
+      numTests: 5,
+      template: 'Custom JSON template',
+    };
+    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPlugin));
+
+    await transformCustomPlugin('file://custom-plugin.json');
+
+    expect(fs.readFileSync).toHaveBeenCalledWith(
+      path.join('/mock/base/path', 'custom-plugin.json'),
+      'utf-8',
+    );
+  });
+
+  it('should use the file path directly when cliState.basePath is not set', async () => {
+    cliState.basePath = '';
+    const mockPlugin = {
+      grader: 'Custom JSON grader',
+      id: 'custom-json-plugin',
+      numTests: 5,
+      template: 'Custom JSON template',
+    };
+    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPlugin));
+
+    await transformCustomPlugin('file://custom-plugin.json');
+
+    expect(fs.readFileSync).toHaveBeenCalledWith('custom-plugin.json', 'utf-8');
+  });
+
+  it('should handle absolute file paths correctly', async () => {
+    const absolutePath = '/absolute/path/to/custom-plugin.json';
+    const mockPlugin = {
+      grader: 'Custom JSON grader',
+      id: 'custom-json-plugin',
+      numTests: 5,
+      template: 'Custom JSON template',
+    };
+    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPlugin));
+
+    await transformCustomPlugin(`file://${absolutePath}`);
+
+    expect(fs.readFileSync).toHaveBeenCalledWith(absolutePath, 'utf-8');
+  });
+
+  it('should handle relative file paths correctly', async () => {
+    cliState.basePath = '/mock/base/path';
+    const relativePath = 'relative/path/to/custom-plugin.json';
+    const mockPlugin = {
+      grader: 'Custom JSON grader',
+      id: 'custom-json-plugin',
+      numTests: 5,
+      template: 'Custom JSON template',
+    };
+    jest.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPlugin));
+
+    await transformCustomPlugin(`file://${relativePath}`);
+
+    expect(fs.readFileSync).toHaveBeenCalledWith(
+      path.join('/mock/base/path', relativePath),
+      'utf-8',
     );
   });
 });

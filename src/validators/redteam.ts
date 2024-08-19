@@ -62,7 +62,9 @@ export async function transformCustomPlugin(
   configPath: string,
 ): Promise<z.infer<typeof RedteamCustomPluginSchema>> {
   const filePath = configPath.slice('file://'.length);
-  const fullPath = path.join(cliState.basePath || '', filePath);
+  const fullPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.join(cliState.basePath || '', filePath);
   const content = fs.readFileSync(fullPath, 'utf-8');
   if (isJavascriptFile(fullPath)) {
     const plugin = await importModule(fullPath);
