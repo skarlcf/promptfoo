@@ -12,7 +12,7 @@ import {
   RedteamPluginSchema,
 } from '../../src/validators/redteam';
 
-describe('redteamGenerateOptionsSchema', () => {
+describe('RedteamGenerateOptionsSchema', () => {
   it('should accept valid options for a redteam test', () => {
     const input = {
       cache: true,
@@ -26,7 +26,7 @@ describe('redteamGenerateOptionsSchema', () => {
       purpose: 'You are an expert content moderator',
       write: true,
     };
-    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual({
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(expect.objectContaining({
       success: true,
       data: {
         cache: true,
@@ -39,8 +39,8 @@ describe('redteamGenerateOptionsSchema', () => {
         provider: 'openai:gpt-4',
         purpose: 'You are an expert content moderator',
         write: true,
-      },
-    });
+      }
+    }));
   });
 
   it('should reject invalid plugin names', () => {
@@ -48,7 +48,8 @@ describe('redteamGenerateOptionsSchema', () => {
       plugins: ['harmful:medical'],
       numTests: 10,
     };
-    expect(RedteamGenerateOptionsSchema.safeParse(input).success).toBe(false);
+    const result = RedteamGenerateOptionsSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should require numTests to be a positive integer', () => {
@@ -56,13 +57,69 @@ describe('redteamGenerateOptionsSchema', () => {
       numTests: -5,
       plugins: ['harmful:hate'],
     };
-    expect(RedteamGenerateOptionsSchema.safeParse(input).success).toBe(false);
+    const result = RedteamGenerateOptionsSchema.safeParse(input);
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept addPlugins and addStrategies', () => {
+    const input = {
+      addPlugins: ['bfla'],
+      addStrategies: ['base64'],
+      cache: true,
+      defaultConfig: {},
+      numTests: 10,
+      plugins: [{ id: 'harmful:hate' }],
+      write: false,
+    };
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          addPlugins: ['bfla'],
+          addStrategies: ['base64'],
+        }),
+      }),
+    );
+  });
+
+  it('should reject invalid addPlugins and addStrategies', () => {
+    const input = {
+      plugins: ['harmful:hate'],
+      addPlugins: ['invalid-plugin'],
+      addStrategies: ['invalid-strategy'],
+      numTests: 10,
+    };
+    const result = RedteamGenerateOptionsSchema.safeParse(input);
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept valid defaultConfigPath', () => {
+    const input = {
+      defaultConfigPath: './config.json',
+      plugins: [{ id: 'harmful:hate' }],
+      numTests: 10,
+      cache: false,
+      defaultConfig: {},
+      write: false,
+    };
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          defaultConfigPath: './config.json',
+          cache: false,
+          defaultConfig: {},
+          write: false,
+        })
+      })
+    );
   });
 });
 
-describe('redteamPluginSchema', () => {
+describe('RedteamPluginSchema', () => {
   it('should accept a valid plugin name as a string', () => {
-    expect(RedteamPluginSchema.safeParse('hijacking').success).toBe(true);
+    const result = RedteamPluginSchema.safeParse('hijacking');
+    expect(result.success).toBe(true);
   });
 
   it('should accept a valid plugin object', () => {
@@ -70,11 +127,14 @@ describe('redteamPluginSchema', () => {
       id: 'harmful:hate',
       numTests: 30,
     };
-    expect(RedteamPluginSchema.safeParse(input).success).toBe(true);
+    const result = RedteamPluginSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual(input);
   });
 
   it('should reject an invalid plugin name', () => {
-    expect(RedteamPluginSchema.safeParse('medical').success).toBe(false);
+    const result = RedteamPluginSchema.safeParse('medical');
+    expect(result.success).toBe(false);
   });
 
   it('should reject a plugin object with negative numTests', () => {
@@ -82,18 +142,49 @@ describe('redteamPluginSchema', () => {
       id: 'jailbreak',
       numTests: -10,
     };
-    expect(RedteamPluginSchema.safeParse(input).success).toBe(false);
+    const result = RedteamPluginSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should allow omitting numTests in a plugin object', () => {
     const input = {
       id: 'hijacking',
     };
-    expect(RedteamPluginSchema.safeParse(input).success).toBe(true);
+    const result = RedteamPluginSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        id: 'hijacking',
+        numTests: expect.any(Number), // The schema might be adding a default value
+      });
+    }
+  });
+
+  it('should accept a valid custom plugin object', () => {
+    const input = {
+      id: 'custom-plugin',
+      numTests: 5,
+      config: { key: 'value' },
+      template: 'Custom template',
+      grader: 'Custom grader',
+    };
+    const result = RedteamPluginSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual(input);
+  });
+
+  it('should reject an invalid custom plugin object', () => {
+    const input = {
+      id: 'custom-plugin',
+      numTests: 5,
+      // Missing required fields: template and grader
+    };
+    const result = RedteamPluginSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 });
 
-describe('redteamConfigSchema', () => {
+describe('RedteamConfigSchema', () => {
   it('should accept a valid configuration with all fields', () => {
     const input = {
       purpose: 'You are a travel agent',
@@ -104,44 +195,37 @@ describe('redteamConfigSchema', () => {
       ],
       strategies: ['prompt-injection'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        purpose: 'You are a travel agent',
-        numTests: 3,
-        plugins: [
-          { id: 'harmful:non-violent-crime', numTests: 5 },
-          { id: 'hijacking', numTests: 3 },
-        ],
-        strategies: [{ id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      purpose: 'You are a travel agent',
+      numTests: 3,
+      plugins: [
+        { id: 'harmful:non-violent-crime', numTests: 5 },
+        { id: 'hijacking', numTests: 3 },
+      ],
+      strategies: [{ id: 'prompt-injection' }],
     });
   });
 
   it('should use default values when fields are omitted', () => {
     const input = {};
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        plugins: expect.arrayContaining(
-          Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object)),
-        ),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      plugins: expect.arrayContaining(Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object))),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
   it('should allow omitting the purpose field', () => {
     const input = { numTests: 10 };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 10,
-        plugins: expect.arrayContaining(
-          Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object)),
-        ),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 10,
+      plugins: expect.arrayContaining(Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object))),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -149,16 +233,15 @@ describe('redteamConfigSchema', () => {
     const input = {
       plugins: ['hijacking', 'overreliance'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: undefined,
-        plugins: [
-          { id: 'hijacking', numTests: undefined },
-          { id: 'overreliance', numTests: undefined },
-        ],
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: undefined,
+      plugins: [
+        { id: 'hijacking', numTests: undefined },
+        { id: 'overreliance', numTests: undefined },
+      ],
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -172,17 +255,16 @@ describe('redteamConfigSchema', () => {
       ],
       strategies: ['jailbreak'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 7,
-        plugins: [
-          { id: 'harmful:non-violent-crime', numTests: 7 },
-          { id: 'hijacking', numTests: 3 },
-          { id: 'overreliance', numTests: 7 },
-        ],
-        strategies: [{ id: 'jailbreak' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 7,
+      plugins: [
+        { id: 'harmful:non-violent-crime', numTests: 7 },
+        { id: 'hijacking', numTests: 3 },
+        { id: 'overreliance', numTests: 7 },
+      ],
+      strategies: [{ id: 'jailbreak' }],
     });
   });
 
@@ -190,21 +272,24 @@ describe('redteamConfigSchema', () => {
     const input = {
       plugins: ['invalid-plugin-name'],
     };
-    expect(RedteamConfigSchema.safeParse(input).success).toBe(false);
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should reject negative numTests', () => {
     const input = {
       numTests: -1,
     };
-    expect(RedteamConfigSchema.safeParse(input).success).toBe(false);
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should reject non-integer numTests', () => {
     const input = {
       numTests: 3.5,
     };
-    expect(RedteamConfigSchema.safeParse(input).success).toBe(false);
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should allow all valid plugin and strategy names', () => {
@@ -215,15 +300,14 @@ describe('redteamConfigSchema', () => {
       plugins: REDTEAM_ALL_PLUGINS,
       strategies: strategiesExceptDefault,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        plugins: REDTEAM_ALL_PLUGINS.filter((id) => !COLLECTIONS.includes(id as any)).map((id) => ({
-          id,
-          numTests: undefined,
-        })),
-        strategies: strategiesExceptDefault.map((id) => ({ id })),
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      plugins: REDTEAM_ALL_PLUGINS.filter((id) => !COLLECTIONS.includes(id as any)).map((id) => ({
+        id,
+        numTests: undefined,
+      })),
+      strategies: strategiesExceptDefault.map((id) => ({ id })),
     });
   });
 
@@ -232,18 +316,17 @@ describe('redteamConfigSchema', () => {
       plugins: ['harmful'],
       numTests: 3,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 3,
-        plugins: Object.keys(HARM_PLUGINS)
-          .map((category) => ({
-            id: category,
-            numTests: 3,
-          }))
-          .sort((a, b) => a.id.localeCompare(b.id)),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 3,
+      plugins: Object.keys(HARM_PLUGINS)
+        .map((category) => ({
+          id: category,
+          numTests: 3,
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -256,26 +339,23 @@ describe('redteamConfigSchema', () => {
       ],
       numTests: 3,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 3,
-        plugins: [
-          { id: 'harmful:hate', numTests: 10 },
-          { id: 'harmful:violent-crime', numTests: 5 },
-          ...Object.keys(HARM_PLUGINS)
-            .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
-            .map((category) => ({
-              id: category,
-              numTests: 3,
-            })),
-        ].sort((a, b) => a.id.localeCompare(b.id)),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 3,
+      plugins: [
+        { id: 'harmful:hate', numTests: 10 },
+        { id: 'harmful:violent-crime', numTests: 5 },
+        ...Object.keys(HARM_PLUGINS)
+          .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
+          .map((category) => ({
+            id: category,
+            numTests: 3,
+          })),
+      ].sort((a, b) => a.id.localeCompare(b.id)),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
-    expect(RedteamConfigSchema.safeParse(input)?.data?.plugins).toHaveLength(
-      Object.keys(HARM_PLUGINS).length,
-    );
+    expect(result.success && result.data.plugins).toHaveLength(Object.keys(HARM_PLUGINS).length);
   });
 
   it('should not duplicate harm categories when specified individually', () => {
@@ -283,19 +363,18 @@ describe('redteamConfigSchema', () => {
       plugins: ['harmful', 'harmful:hate', { id: 'harmful:violent-crime', numTests: 5 }],
       numTests: 3,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 3,
-        plugins: expect.arrayContaining([
-          { id: 'harmful:hate', numTests: 3 },
-          { id: 'harmful:violent-crime', numTests: 5 },
-          ...Object.keys(HARM_PLUGINS)
-            .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
-            .map((category) => ({ id: category, numTests: 3 })),
-        ]),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 3,
+      plugins: expect.arrayContaining([
+        { id: 'harmful:hate', numTests: 3 },
+        { id: 'harmful:violent-crime', numTests: 5 },
+        ...Object.keys(HARM_PLUGINS)
+          .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
+          .map((category) => ({ id: category, numTests: 3 })),
+      ]),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -304,16 +383,15 @@ describe('redteamConfigSchema', () => {
       plugins: [{ id: 'harmful:hate', numTests: 10 }, 'harmful:violent-crime'],
       numTests: 3,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 3,
-        plugins: expect.arrayContaining([
-          { id: 'harmful:hate', numTests: 10 },
-          { id: 'harmful:violent-crime', numTests: 3 },
-        ]),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 3,
+      plugins: expect.arrayContaining([
+        { id: 'harmful:hate', numTests: 10 },
+        { id: 'harmful:violent-crime', numTests: 3 },
+      ]),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -321,7 +399,8 @@ describe('redteamConfigSchema', () => {
     const input = {
       plugins: ['harmful:invalid-category'],
     };
-    expect(RedteamConfigSchema.safeParse(input).success).toBe(false);
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(false);
   });
 
   it('should accept an array of injectVar strings', () => {
@@ -330,13 +409,12 @@ describe('redteamConfigSchema', () => {
       plugins: ['harmful:insults'],
       strategies: ['jailbreak'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        injectVar: 'system',
-        plugins: [{ id: 'harmful:insults', numTests: undefined }],
-        strategies: [{ id: 'jailbreak' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      injectVar: 'system',
+      plugins: [{ id: 'harmful:insults', numTests: undefined }],
+      strategies: [{ id: 'jailbreak' }],
     });
   });
 
@@ -346,13 +424,12 @@ describe('redteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        provider: 'openai:gpt-3.5-turbo',
-        plugins: [{ id: 'overreliance', numTests: undefined }],
-        strategies: [{ id: 'jailbreak' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      provider: 'openai:gpt-3.5-turbo',
+      plugins: [{ id: 'overreliance', numTests: undefined }],
+      strategies: [{ id: 'jailbreak' }],
     });
   });
 
@@ -362,13 +439,12 @@ describe('redteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        language: 'German',
-        plugins: [{ id: 'overreliance', config: undefined, numTests: undefined }],
-        strategies: [{ id: 'jailbreak' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      language: 'German',
+      plugins: [{ id: 'overreliance', config: undefined, numTests: undefined }],
+      strategies: [{ id: 'jailbreak' }],
     });
   });
 
@@ -379,18 +455,17 @@ describe('redteamConfigSchema', () => {
       purpose: 'Test adversarial inputs',
       plugins: ['overreliance', 'politics'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        injectVar: 'system',
-        provider: 'openai:gpt-4',
-        purpose: 'Test adversarial inputs',
-        plugins: [
-          { id: 'overreliance', numTests: undefined },
-          { id: 'politics', numTests: undefined },
-        ],
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      injectVar: 'system',
+      provider: 'openai:gpt-4',
+      purpose: 'Test adversarial inputs',
+      plugins: [
+        { id: 'overreliance', numTests: undefined },
+        { id: 'politics', numTests: undefined },
+      ],
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
   });
 
@@ -406,19 +481,18 @@ describe('redteamConfigSchema', () => {
       plugins: ['overreliance'],
       strategies: ['jailbreak'],
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        provider: {
-          id: 'openai:gpt-4',
-          config: {
-            temperature: 0.7,
-            max_tokens: 100,
-          },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      provider: {
+        id: 'openai:gpt-4',
+        config: {
+          temperature: 0.7,
+          max_tokens: 100,
         },
-        plugins: [{ id: 'overreliance', numTests: undefined }],
-        strategies: [{ id: 'jailbreak' }],
       },
+      plugins: [{ id: 'overreliance', numTests: undefined }],
+      strategies: [{ id: 'jailbreak' }],
     });
   });
 
@@ -435,11 +509,13 @@ describe('redteamConfigSchema', () => {
     };
     const result = RedteamConfigSchema.safeParse(input);
     expect(result.success).toBe(true);
-    expect(result.data?.provider).toHaveProperty('id');
-    expect(result.data?.provider).toHaveProperty('callApi');
-    expect(result.data?.provider).toHaveProperty('label', 'Custom Provider');
-    expect(result.data?.plugins).toEqual([{ id: 'overreliance', numTests: undefined }]);
-    expect(result.data?.strategies).toEqual([{ id: 'jailbreak' }]);
+    expect(result.success && result.data.provider).toHaveProperty('id');
+    expect(result.success && result.data.provider).toHaveProperty('callApi');
+    expect(result.success && result.data.provider).toHaveProperty('label', 'Custom Provider');
+    expect(result.success && result.data.plugins).toEqual([
+      { id: 'overreliance', numTests: undefined },
+    ]);
+    expect(result.success && result.data.strategies).toEqual([{ id: 'jailbreak' }]);
   });
 
   it('should reject an invalid provider', () => {
@@ -462,22 +538,21 @@ describe('redteamConfigSchema', () => {
       ],
       numTests: 2,
     };
-    expect(RedteamConfigSchema.safeParse(input)).toEqual({
-      success: true,
-      data: {
-        numTests: 2,
-        plugins: [
-          { id: 'harmful:hate', numTests: 10 },
-          { id: 'policy', config: { policy: 'Policy 1' }, numTests: 5 },
-          { id: 'policy', config: { policy: 'Policy 2' }, numTests: 3 },
-          ...Object.keys(HARM_PLUGINS)
-            .filter((category) => category !== 'harmful:hate')
-            .map((category) => ({ id: category, numTests: 2 })),
-        ].sort((a, b) => a.id.localeCompare(b.id)),
-        strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-      },
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data).toEqual({
+      numTests: 2,
+      plugins: [
+        { id: 'harmful:hate', numTests: 10 },
+        { id: 'policy', config: { policy: 'Policy 1' }, numTests: 5 },
+        { id: 'policy', config: { policy: 'Policy 2' }, numTests: 3 },
+        ...Object.keys(HARM_PLUGINS)
+          .filter((category) => category !== 'harmful:hate')
+          .map((category) => ({ id: category, numTests: 2 })),
+      ].sort((a, b) => a.id.localeCompare(b.id)),
+      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
     });
-    expect(RedteamConfigSchema.safeParse(input)?.data?.plugins).toHaveLength(
+    expect(result.success && result.data.plugins).toHaveLength(
       Object.keys(HARM_PLUGINS).length + 2, // +2 for the two policy plugins
     );
   });
@@ -492,8 +567,8 @@ describe('redteamConfigSchema', () => {
     };
     const result = RedteamConfigSchema.safeParse(input);
     expect(result.success).toBe(true);
-    expect(result.data).toBeDefined();
-    const piiPlugins = result.data?.plugins.filter((p) => p.id.startsWith('pii:'));
+    expect(result.success && result.data).toBeDefined();
+    const piiPlugins = result.success && result.data.plugins.filter((p) => p.id.startsWith('pii:'));
     expect(piiPlugins).toEqual(
       expect.arrayContaining([
         { id: 'pii:session', numTests: 3 },
@@ -513,10 +588,76 @@ describe('redteamConfigSchema', () => {
     };
     const result = RedteamConfigSchema.safeParse(input);
     expect(result.success).toBe(true);
-    expect(result.data?.plugins).toEqual([
+    expect(result.success && result.data.plugins).toEqual([
       { id: 'hijacking', numTests: 2 },
       { id: 'policy', config: { policy: 'Policy A' }, numTests: 5 },
       { id: 'policy', config: { policy: 'Policy B' }, numTests: 3 },
     ]);
+  });
+
+  it('should handle custom plugins', () => {
+    const input = {
+      plugins: [
+        {
+          id: 'custom-plugin',
+          numTests: 5,
+          config: { key: 'value' },
+          template: 'Custom template',
+          grader: 'Custom grader',
+        },
+        'harmful:hate',
+      ],
+      numTests: 10,
+    };
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.plugins).toContainEqual({
+      id: 'custom-plugin',
+      numTests: 5,
+      config: { key: 'value' },
+      template: 'Custom template',
+      grader: 'Custom grader',
+    });
+  });
+
+  it('should handle the "default" plugin correctly', () => {
+    const input = {
+      plugins: ['default'],
+      numTests: 5,
+    };
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.plugins.length).toBeGreaterThan(0);
+    expect(result.success && result.data.plugins.every((p) => p.numTests === 5)).toBe(true);
+  });
+
+  it('should handle the "basic" strategy correctly', () => {
+    const input = {
+      plugins: ['harmful:hate'],
+      strategies: ['basic'],
+    };
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.strategies).toEqual([]);
+  });
+
+  it('should handle provider object correctly', () => {
+    const input = {
+      plugins: ['harmful:hate'],
+      provider: {
+        id: 'openai:gpt-4',
+        config: {
+          temperature: 0.7,
+        },
+      },
+    };
+    const result = RedteamConfigSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.provider).toEqual({
+      id: 'openai:gpt-4',
+      config: {
+        temperature: 0.7,
+      },
+    });
   });
 });
