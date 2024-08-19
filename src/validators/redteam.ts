@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import cliState from '../cliState';
-import logger from '../logger';
+import { importModule } from '../esm';
 import {
   ALL_PLUGINS as REDTEAM_ALL_PLUGINS,
   DEFAULT_PLUGINS as REDTEAM_DEFAULT_PLUGINS,
@@ -19,6 +19,7 @@ import {
   DEFAULT_NUM_TESTS_PER_PLUGIN,
 } from '../redteam/constants';
 import type { RedteamConfig, RedteamPluginObject } from '../types/redteam';
+import { isJavascriptFile } from '../util';
 import { ProviderSchema } from '../validators/providers';
 
 /**
@@ -62,16 +63,19 @@ export const RedteamPluginSchema = z.union([
   z
     .string()
     .startsWith('file://')
-    .transform((configPath) => {
+    .transform(async (configPath) => {
       const filePath = configPath.slice(7);
       const fullPath = path.join(cliState.basePath || '', filePath);
-      logger.error(`------------- fullPath: ${fullPath}`);
-      logger.error(`------------- filePath: ${filePath}`);
-      logger.error(`------------- cliState.basePath: ${cliState.basePath}`);
       const content = fs.readFileSync(fullPath, 'utf-8');
-      return RedteamCustomPluginSchema.parse(yaml.load(content));
+      if (isJavascriptFile(fullPath)) {
+        const plugin = await importModule(fullPath);
+        return RedteamCustomPluginSchema.parse(plugin);
+      } else if (['.json', '.yaml', '.yml'].some((ext) => filePath.endsWith(ext))) {
+        return RedteamCustomPluginSchema.parse(yaml.load(content));
+      }
+      throw new Error(`Unsupported file type for custom plugin: ${filePath}`);
     })
-    .describe('Path to a custom plugin JSON file'),
+    .describe('Path to a custom plugin file'),
 ]);
 
 /**
