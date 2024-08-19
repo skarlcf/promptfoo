@@ -26,21 +26,23 @@ describe('RedteamGenerateOptionsSchema', () => {
       purpose: 'You are an expert content moderator',
       write: true,
     };
-    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(expect.objectContaining({
-      success: true,
-      data: {
-        cache: true,
-        config: 'promptfooconfig.yaml',
-        defaultConfig: { temperature: 0.7 },
-        injectVar: 'query',
-        numTests: 50,
-        output: 'sample-results.json',
-        plugins: [{ id: 'harmful:hate', numTests: 5 }],
-        provider: 'openai:gpt-4',
-        purpose: 'You are an expert content moderator',
-        write: true,
-      }
-    }));
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          cache: true,
+          config: 'promptfooconfig.yaml',
+          defaultConfig: { temperature: 0.7 },
+          injectVar: 'query',
+          numTests: 50,
+          output: 'sample-results.json',
+          plugins: [{ id: 'harmful:hate', numTests: 5 }],
+          provider: 'openai:gpt-4',
+          purpose: 'You are an expert content moderator',
+          write: true,
+        },
+      }),
+    );
   });
 
   it('should reject invalid plugin names', () => {
@@ -48,8 +50,11 @@ describe('RedteamGenerateOptionsSchema', () => {
       plugins: ['harmful:medical'],
       numTests: 10,
     };
-    const result = RedteamGenerateOptionsSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should require numTests to be a positive integer', () => {
@@ -57,8 +62,11 @@ describe('RedteamGenerateOptionsSchema', () => {
       numTests: -5,
       plugins: ['harmful:hate'],
     };
-    const result = RedteamGenerateOptionsSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should accept addPlugins and addStrategies', () => {
@@ -89,8 +97,11 @@ describe('RedteamGenerateOptionsSchema', () => {
       addStrategies: ['invalid-strategy'],
       numTests: 10,
     };
-    const result = RedteamGenerateOptionsSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamGenerateOptionsSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should accept valid defaultConfigPath', () => {
@@ -110,16 +121,19 @@ describe('RedteamGenerateOptionsSchema', () => {
           cache: false,
           defaultConfig: {},
           write: false,
-        })
-      })
+        }),
+      }),
     );
   });
 });
 
 describe('RedteamPluginSchema', () => {
   it('should accept a valid plugin name as a string', () => {
-    const result = RedteamPluginSchema.safeParse('hijacking');
-    expect(result.success).toBe(true);
+    expect(RedteamPluginSchema.safeParse('hijacking')).toEqual(
+      expect.objectContaining({
+        success: true,
+      }),
+    );
   });
 
   it('should accept a valid plugin object', () => {
@@ -127,14 +141,20 @@ describe('RedteamPluginSchema', () => {
       id: 'harmful:hate',
       numTests: 30,
     };
-    const result = RedteamPluginSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual(input);
+    expect(RedteamPluginSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: input,
+      }),
+    );
   });
 
   it('should reject an invalid plugin name', () => {
-    const result = RedteamPluginSchema.safeParse('medical');
-    expect(result.success).toBe(false);
+    expect(RedteamPluginSchema.safeParse('medical')).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should reject a plugin object with negative numTests', () => {
@@ -142,22 +162,26 @@ describe('RedteamPluginSchema', () => {
       id: 'jailbreak',
       numTests: -10,
     };
-    const result = RedteamPluginSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamPluginSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should allow omitting numTests in a plugin object', () => {
     const input = {
       id: 'hijacking',
     };
-    const result = RedteamPluginSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual({
-        id: 'hijacking',
-        numTests: expect.any(Number), // The schema might be adding a default value
-      });
-    }
+    expect(RedteamPluginSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          id: 'hijacking',
+          numTests: expect.any(Number), // The schema might be adding a default value
+        },
+      }),
+    );
   });
 
   it('should accept a valid custom plugin object', () => {
@@ -168,9 +192,12 @@ describe('RedteamPluginSchema', () => {
       template: 'Custom template',
       grader: 'Custom grader',
     };
-    const result = RedteamPluginSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual(input);
+    expect(RedteamPluginSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: input,
+      }),
+    );
   });
 
   it('should reject an invalid custom plugin object', () => {
@@ -179,8 +206,11 @@ describe('RedteamPluginSchema', () => {
       numTests: 5,
       // Missing required fields: template and grader
     };
-    const result = RedteamPluginSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamPluginSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 });
 
@@ -195,17 +225,20 @@ describe('RedteamConfigSchema', () => {
       ],
       strategies: ['prompt-injection'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      purpose: 'You are a travel agent',
-      numTests: 3,
-      plugins: [
-        { id: 'harmful:non-violent-crime', numTests: 5 },
-        { id: 'hijacking', numTests: 3 },
-      ],
-      strategies: [{ id: 'prompt-injection' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          purpose: 'You are a travel agent',
+          numTests: 3,
+          plugins: [
+            { id: 'harmful:non-violent-crime', numTests: 5 },
+            { id: 'hijacking', numTests: 3 },
+          ],
+          strategies: [{ id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should use default values when fields are omitted', () => {
@@ -220,29 +253,37 @@ describe('RedteamConfigSchema', () => {
 
   it('should allow omitting the purpose field', () => {
     const input = { numTests: 10 };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: 10,
-      plugins: expect.arrayContaining(Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object))),
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          numTests: 10,
+          plugins: expect.arrayContaining(
+            Array(REDTEAM_DEFAULT_PLUGINS.size).fill(expect.any(Object)),
+          ),
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should transform string plugins to objects', () => {
     const input = {
       plugins: ['hijacking', 'overreliance'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: undefined,
-      plugins: [
-        { id: 'hijacking', numTests: undefined },
-        { id: 'overreliance', numTests: undefined },
-      ],
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          numTests: undefined,
+          plugins: [
+            { id: 'hijacking', numTests: undefined },
+            { id: 'overreliance', numTests: undefined },
+          ],
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should use global numTests for plugins without specified numTests', () => {
@@ -255,41 +296,53 @@ describe('RedteamConfigSchema', () => {
       ],
       strategies: ['jailbreak'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: 7,
-      plugins: [
-        { id: 'harmful:non-violent-crime', numTests: 7 },
-        { id: 'hijacking', numTests: 3 },
-        { id: 'overreliance', numTests: 7 },
-      ],
-      strategies: [{ id: 'jailbreak' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          numTests: 7,
+          plugins: [
+            { id: 'harmful:non-violent-crime', numTests: 7 },
+            { id: 'hijacking', numTests: 3 },
+            { id: 'overreliance', numTests: 7 },
+          ],
+          strategies: [{ id: 'jailbreak' }],
+        },
+      }),
+    );
   });
 
   it('should reject invalid plugin names', () => {
     const input = {
       plugins: ['invalid-plugin-name'],
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should reject negative numTests', () => {
     const input = {
       numTests: -1,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should reject non-integer numTests', () => {
     const input = {
       numTests: 3.5,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(false);
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: false,
+      }),
+    );
   });
 
   it('should allow all valid plugin and strategy names', () => {
@@ -300,15 +353,20 @@ describe('RedteamConfigSchema', () => {
       plugins: REDTEAM_ALL_PLUGINS,
       strategies: strategiesExceptDefault,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      plugins: REDTEAM_ALL_PLUGINS.filter((id) => !COLLECTIONS.includes(id as any)).map((id) => ({
-        id,
-        numTests: undefined,
-      })),
-      strategies: strategiesExceptDefault.map((id) => ({ id })),
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          plugins: REDTEAM_ALL_PLUGINS.filter((id) => !COLLECTIONS.includes(id as any)).map(
+            (id) => ({
+              id,
+              numTests: undefined,
+            }),
+          ),
+          strategies: strategiesExceptDefault.map((id) => ({ id })),
+        },
+      }),
+    );
   });
 
   it('should expand harmful plugin to all harm categories', () => {
@@ -316,18 +374,21 @@ describe('RedteamConfigSchema', () => {
       plugins: ['harmful'],
       numTests: 3,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: 3,
-      plugins: Object.keys(HARM_PLUGINS)
-        .map((category) => ({
-          id: category,
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
           numTests: 3,
-        }))
-        .sort((a, b) => a.id.localeCompare(b.id)),
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
+          plugins: Object.keys(HARM_PLUGINS)
+            .map((category) => ({
+              id: category,
+              numTests: 3,
+            }))
+            .sort((a, b) => a.id.localeCompare(b.id)),
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should allow overriding specific harm categories', () => {
@@ -340,22 +401,28 @@ describe('RedteamConfigSchema', () => {
       numTests: 3,
     };
     const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: 3,
-      plugins: [
-        { id: 'harmful:hate', numTests: 10 },
-        { id: 'harmful:violent-crime', numTests: 5 },
-        ...Object.keys(HARM_PLUGINS)
-          .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
-          .map((category) => ({
-            id: category,
-            numTests: 3,
-          })),
-      ].sort((a, b) => a.id.localeCompare(b.id)),
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
-    expect(result.success && result.data.plugins).toHaveLength(Object.keys(HARM_PLUGINS).length);
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          numTests: 3,
+          plugins: expect.arrayContaining(
+            [
+              { id: 'harmful:hate', numTests: 10 },
+              { id: 'harmful:violent-crime', numTests: 5 },
+              ...Object.keys(HARM_PLUGINS)
+                .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
+                .map((category) => ({
+                  id: category,
+                  numTests: 3,
+                })),
+            ].sort((a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id)),
+          ),
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
+    expect(result?.data?.plugins).toHaveLength(Object.keys(HARM_PLUGINS).length);
   });
 
   it('should not duplicate harm categories when specified individually', () => {
@@ -363,19 +430,22 @@ describe('RedteamConfigSchema', () => {
       plugins: ['harmful', 'harmful:hate', { id: 'harmful:violent-crime', numTests: 5 }],
       numTests: 3,
     };
-    const result = RedteamConfigSchema.safeParse(input);
-    expect(result.success).toBe(true);
-    expect(result.success && result.data).toEqual({
-      numTests: 3,
-      plugins: expect.arrayContaining([
-        { id: 'harmful:hate', numTests: 3 },
-        { id: 'harmful:violent-crime', numTests: 5 },
-        ...Object.keys(HARM_PLUGINS)
-          .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
-          .map((category) => ({ id: category, numTests: 3 })),
-      ]),
-      strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
-    });
+    expect(RedteamConfigSchema.safeParse(input)).toEqual(
+      expect.objectContaining({
+        success: true,
+        data: {
+          numTests: 3,
+          plugins: expect.arrayContaining([
+            { id: 'harmful:hate', numTests: 3 },
+            { id: 'harmful:violent-crime', numTests: 5 },
+            ...Object.keys(HARM_PLUGINS)
+              .filter((category) => !['harmful:hate', 'harmful:violent-crime'].includes(category))
+              .map((category) => ({ id: category, numTests: 3 })),
+          ]),
+          strategies: [{ id: 'jailbreak' }, { id: 'prompt-injection' }],
+        },
+      }),
+    );
   });
 
   it('should handle harmful categories without specifying harmful plugin', () => {
