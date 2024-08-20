@@ -7,48 +7,75 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      - run: npm ci
-      - uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: dist/
-
-  nexe-build:
-    needs: build
-    runs-on: ubuntu-latest
+  build-and-release:
     strategy:
       matrix:
-        os: [linux, macos, win]
-        arch: [x64, arm64]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+          - os: macos-latest
+            platform: macos
+            arch: x64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+          - os: windows-latest
+            platform: win
+            arch: x64
+          # - os: windows-latest
+          #   platform: win
+          #   arch: arm64
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - uses: actions/download-artifact@v3
-        with:
-          name: dist
-          path: dist/
       - run: npm ci
-      - name: Install nexe globally
-        run: npm install -g nexe
+
+      - name: Run tests
+        run: npm test
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nexe
+          key: ${{ runner.os }}-nexe-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nexe-
+
       - name: Build executable
-        run: npx nexe --build -r drizzle/ -r package.json -r dist/ src/main.js -o promptfoo-${{ matrix.os }}-${{ matrix.arch }}
+        run: |
+          npx nexe --build -r drizzle/ -r package.json -r dist/ src/main.js -o promptfoo-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'win' && '.exe' || '' }}
+        continue-on-error: true
+
+      - name: Check if build succeeded
+        id: check_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "promptfoo-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'win' && '.exe' || '' }}"
+
+      - name: Create checksum
+        if: steps.check_files.outputs.files_exists == 'true'
+        run: |
+          if [ "${{ matrix.platform }}" == "win" ]; then
+            certutil -hashfile promptfoo-${{ matrix.platform }}-${{ matrix.arch }}.exe SHA256 | findstr /v "hash" > promptfoo-${{ matrix.platform }}-${{ matrix.arch }}.sha256
+          else
+            sha256sum promptfoo-${{ matrix.platform }}-${{ matrix.arch }} > promptfoo-${{ matrix.platform }}-${{ matrix.arch }}.sha256
+          fi
+        shell: bash
+
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+        if: startsWith(github.ref, 'refs/tags/') && steps.check_files.outputs.files_exists == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            promptfoo-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'win' && '.exe' || '' }}
+            promptfoo-${{ matrix.platform }}-${{ matrix.arch }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./promptfoo-${{ matrix.os }}-${{ matrix.arch }}
-          asset_name: promptfoo-${{ matrix.os }}-${{ matrix.arch }}
-          asset_content_type: application/octet-stream
