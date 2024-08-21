@@ -1,5 +1,7 @@
-import type { TestSuite } from '../../types';
+import logger from '../../logger';
+import type { TestSuite, TestCase } from '../../types';
 import { filterFailingTests } from './filterFailingTests';
+import { getNunjucksEngine } from '../../util/templates';
 
 interface Args {
   firstN?: string;
@@ -10,33 +12,54 @@ interface Args {
 type Tests = TestSuite['tests'];
 
 export async function filterTests(testSuite: TestSuite, args: Args): Promise<Tests> {
-  const tests = testSuite.tests;
+  let tests: TestCase[] = testSuite.tests || [];
 
-  if (!tests) {
-    return tests;
-  }
-
-  if (Object.keys(args).length === 0) {
-    return tests;
+  // If we have scenarios, we need to flatten them into individual tests
+  if (testSuite.scenarios && testSuite.scenarios.length > 0) {
+    const nunjucks = getNunjucksEngine(testSuite.nunjucksFilters);
+    const scenarioTests = testSuite.scenarios.flatMap((scenario) =>
+      scenario.config.flatMap((config) =>
+        (scenario.tests || []).map((test) => {
+          const vars = { ...config.vars, ...test.vars };
+          const renderedDescription = test.description
+            ? nunjucks.renderString(test.description, vars)
+            : undefined;
+          return {
+            ...test,
+            vars,
+            description: renderedDescription,
+          };
+        }),
+      ),
+    );
+    tests = [...tests, ...scenarioTests];
   }
 
   const { firstN, pattern, failing } = args;
-  let newTests: NonNullable<Tests>;
+  let newTests: TestCase[];
 
   if (failing) {
     newTests = await filterFailingTests(testSuite, failing);
   } else {
-    newTests = [...tests];
+    newTests = tests;
   }
 
   if (pattern) {
-    newTests = newTests.filter((test) => test.description && test.description.match(pattern));
+    const regex = new RegExp(pattern);
+    logger.debug(`Applying filter pattern: ${pattern}`);
+    logger.debug(`Total tests before filtering: ${newTests.length}`);
+    newTests = newTests.filter((test) => {
+      const matches = regex.test(test.description || '');
+      logger.debug(`Test description: "${test.description}", Matches: ${matches}`);
+      return matches;
+    });
+    logger.debug(`Total tests after filtering: ${newTests.length}`);
   }
 
-  if (firstN) {
+  if (firstN !== undefined) {
     const count = parseInt(firstN);
 
-    if (isNaN(count)) {
+    if (Number.isNaN(count)) {
       throw new Error(`firstN must be a number, got: ${firstN}`);
     }
 

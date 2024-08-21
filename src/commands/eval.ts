@@ -33,6 +33,7 @@ import {
 } from '../util';
 import { filterProviders } from './eval/filterProviders';
 import { filterTests } from './eval/filterTests';
+import { getNunjucksEngine } from '../util/templates';
 
 export async function doEval(
   cmdObj: CommandLineOptions & Command,
@@ -67,15 +68,48 @@ export async function doEval(
     ({ config, testSuite, basePath } = await resolveConfigs(cmdObj, defaultConfig));
     cliState.basePath = basePath;
 
-    let maxConcurrency = parseInt(cmdObj.maxConcurrency || '', 10);
-    const delay = parseInt(cmdObj.delay || '', 0);
-
-    if (delay > 0) {
-      maxConcurrency = 1;
-      logger.info(
-        `Running at concurrency=1 because ${delay}ms delay was requested between API calls`,
-      );
+    if (!testSuite) {
+      throw new Error('TestSuite is undefined after resolveConfigs');
     }
+
+    // Process scenarios and add them to testSuite.tests
+    if (testSuite.scenarios && testSuite.scenarios.length > 0) {
+      const nunjucks = getNunjucksEngine(testSuite.nunjucksFilters);
+      const scenarioTests = testSuite.scenarios.flatMap((scenario) =>
+        scenario.config.flatMap((data) =>
+          (scenario.tests || []).map((test) => {
+            const renderedDescription = test.description
+              ? nunjucks.renderString(test.description, data.vars || {})
+              : undefined;
+
+            return {
+              ...(testSuite?.defaultTest || {}),
+              ...data,
+              ...test,
+              description: renderedDescription,
+              vars: {
+                ...(testSuite?.defaultTest?.vars || {}),
+                ...data.vars,
+                ...test.vars,
+              },
+              options: {
+                ...(testSuite?.defaultTest?.options || {}),
+                ...test.options,
+              },
+              assert: [...(data.assert || []), ...(test.assert || [])],
+              metadata: {
+                ...(testSuite?.defaultTest?.metadata || {}),
+                ...data.metadata,
+                ...test.metadata,
+              },
+            };
+          }),
+        ),
+      );
+      testSuite.tests = (testSuite.tests || []).concat(scenarioTests);
+    }
+
+    logger.debug(`Total tests before filtering: ${testSuite.tests?.length}`);
 
     testSuite.tests = await filterTests(testSuite, {
       firstN: cmdObj.filterFirstN,
@@ -83,7 +117,12 @@ export async function doEval(
       failing: cmdObj.filterFailing,
     });
 
+    logger.debug(`Filtered tests count: ${testSuite?.tests?.length}`);
+
     testSuite.providers = filterProviders(testSuite.providers, cmdObj.filterProviders);
+
+    const maxConcurrency = parseInt(cmdObj.maxConcurrency || '', 10);
+    const delay = parseInt(cmdObj.delay || '0', 10);
 
     const options: EvaluateOptions = {
       showProgressBar: getLogLevel() === 'debug' ? false : cmdObj.progressBar,

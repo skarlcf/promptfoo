@@ -29,6 +29,7 @@ import type {
   Assertion,
 } from './types';
 import { sha256 } from './util';
+import { getNunjucksEngine } from './util/templates';
 import { transform } from './util/transform';
 
 export const DEFAULT_MAX_CONCURRENCY = 4;
@@ -423,6 +424,8 @@ class Evaluator {
 
     // Build scenarios and add to tests
     if (testSuite.scenarios && testSuite.scenarios.length > 0) {
+      const nunjucks = getNunjucksEngine(testSuite.nunjucksFilters);
+
       for (const scenario of testSuite.scenarios) {
         for (const data of scenario.config) {
           // Merge defaultTest with scenario config
@@ -433,10 +436,18 @@ class Evaluator {
               },
             ]
           ).map((test) => {
+            // Render the description using the current scenario vars
+            const renderedDescription = test.description
+              ? nunjucks.renderString(test.description, data.vars || {})
+              : undefined;
+
+            logger.debug(`Rendered description: ${renderedDescription}`);
+
             return {
               ...testSuite.defaultTest,
               ...data,
               ...test,
+              description: renderedDescription,
               vars: {
                 ...testSuite.defaultTest?.vars,
                 ...data.vars,
@@ -446,11 +457,7 @@ class Evaluator {
                 ...testSuite.defaultTest?.options,
                 ...test.options,
               },
-              assert: [
-                // defaultTest.assert is omitted because it will be added to each test case later
-                ...(data.assert || []),
-                ...(test.assert || []),
-              ],
+              assert: [...(data.assert || []), ...(test.assert || [])],
               metadata: {
                 ...testSuite.defaultTest?.metadata,
                 ...data.metadata,
