@@ -1,0 +1,25 @@
+description: "1061 Issue Example"
+
+providers:
+  - openai:gpt-4o-mini
+
+scenarios:
+  - config:
+      - vars:
+          language: Spanish
+          expectedHelloWorld: 'Hola mundo'
+      - vars:
+          language: French
+          expectedHelloWorld: 'Bonjour le monde'
+
+    tests:
+      # this isn't templated
+      - description: Translated Hello World from {{ language }}
+        vars:
+          input: 'Hello world'
+      - description: Translated Good Morning {{ language }}
+        vars:
+          input: 'Good morning'
+
+prompts:
+  - "Translate the following text to {{ language }}: {{ input }}"
