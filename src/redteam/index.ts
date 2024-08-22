@@ -246,6 +246,7 @@ export async function synthesize({
           metadata: {
             ...(t.metadata || {}),
             pluginId: plugin.id,
+            strategyId: 'basic', // Add 'basic' strategyId to all initial test cases
           },
         })),
       );
@@ -300,7 +301,15 @@ export async function synthesize({
     }
   }
 
-  testCases.push(...newTestCases);
+  // Filter out 'basic' strategy test cases if 'basic' is not in strategies
+  const hasBasicStrategy = strategies.some(s => s.id === 'basic');
+  const filteredTestCases = hasBasicStrategy
+    ? testCases
+    : testCases.filter(t => t.metadata?.strategyId !== 'basic');
+
+  testCases.length = 0; // Clear the original array
+  testCases.push(...filteredTestCases, ...newTestCases);
+
   logger.info(generateReport(pluginResults, strategyResults));
 
   return { purpose, entities, testCases };
