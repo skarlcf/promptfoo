@@ -199,41 +199,16 @@ export class OllamaCompletionProvider implements ApiProvider {
     }
 
     try {
-      if (this.config.stream) {
-        // If streaming, we need to parse multiple JSON lines
-        let totalTokens = 0;
-        const output = responseData
-          .split('\n')
-          .filter((line: string) => line.trim() !== '')
-          .map((line: string) => {
-            const parsed = JSON.parse(line) as OllamaCompletionJsonL;
-            totalTokens += parsed.eval_count || 0;
-            return parsed.response || '';
-          })
-          .join('');
-
-        return {
-          output,
-          cached,
-          tokenUsage: {
-            total: totalTokens,
-            prompt: 0, // Ollama doesn't provide separate prompt token count
-            completion: totalTokens,
-          },
-        };
-      } else {
-        // If not streaming, the response is a single JSON object
-        const parsed = JSON.parse(responseData) as OllamaCompletionJsonL;
-        return {
-          output: parsed.response || '',
-          cached,
-          tokenUsage: {
-            total: parsed.eval_count || 0,
-            prompt: 0, // Ollama doesn't provide separate prompt token count
-            completion: parsed.eval_count || 0,
-          },
-        };
-      }
+      const parsed = JSON.parse(responseData) as OllamaCompletionJsonL;
+      return {
+        output: parsed.response || '',
+        cached,
+        tokenUsage: {
+          total: parsed.eval_count || 0,
+          prompt: 0, // Ollama doesn't provide separate prompt token count
+          completion: parsed.eval_count || 0,
+        },
+      };
     } catch (err) {
       return {
         error: `Ollama API response error: ${String(err)}: ${responseData}`,
@@ -327,41 +302,16 @@ export class OllamaChatProvider implements ApiProvider {
     }
 
     try {
-      if (this.config.stream) {
-        // If streaming, we need to parse multiple JSON lines
-        let totalTokens = 0;
-        const output = responseData
-          .split('\n')
-          .filter((line: string) => line.trim() !== '')
-          .map((line: string) => {
-            const parsed = JSON.parse(line) as OllamaChatJsonL;
-            totalTokens += parsed.eval_count || 0;
-            return parsed.message?.content || '';
-          })
-          .join('');
-
-        return {
-          output,
-          cached,
-          tokenUsage: {
-            total: totalTokens,
-            prompt: 0, // Ollama doesn't provide separate prompt token count
-            completion: totalTokens,
-          },
-        };
-      } else {
-        // If not streaming, the response is a single JSON object
-        const parsed = JSON.parse(responseData) as OllamaChatJsonL;
-        return {
-          output: parsed.message?.content || '',
-          cached,
-          tokenUsage: {
-            total: parsed.eval_count || 0,
-            prompt: 0, // Ollama doesn't provide separate prompt token count
-            completion: parsed.eval_count || 0,
-          },
-        };
-      }
+      const parsed = JSON.parse(responseData) as OllamaChatJsonL;
+      return {
+        output: parsed.message?.content || '',
+        cached,
+        tokenUsage: {
+          total: parsed.eval_count || 0,
+          prompt: 0, // Ollama doesn't provide separate prompt token count
+          completion: parsed.eval_count || 0,
+        },
+      };
     } catch (err) {
       return {
         error: `Ollama API response error: ${String(err)}: ${responseData}`,
