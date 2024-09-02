@@ -9,6 +9,7 @@
     "envars",
     "Groq",
     "logits",
+    "mirostat",
     "mitigations",
     "mlock",
     "mmap",

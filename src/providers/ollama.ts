@@ -6,75 +6,77 @@ import { REQUEST_TIMEOUT_MS, parseChatPrompt } from './shared';
 
 interface OllamaCompletionOptions {
   // From https://github.com/jmorganca/ollama/blob/v0.1.0/api/types.go#L161
-  num_predict?: number;
-  top_k?: number;
-  top_p?: number;
-  tfs_z?: number;
-  seed?: number;
-  useNUMA?: boolean;
-  num_ctx?: number;
-  num_keep?: number;
-  num_batch?: number;
-  num_gqa?: number;
-  num_gpu?: number;
-  main_gpu?: number;
-  low_vram?: boolean;
-  f16_kv?: boolean;
-  logits_all?: boolean;
-  vocab_only?: boolean;
-  use_mmap?: boolean;
-  use_mlock?: boolean;
   embedding_only?: boolean;
+  f16_kv?: boolean;
+  frequency_penalty?: number;
+  logits_all?: boolean;
+  low_vram?: boolean;
+  main_gpu?: number;
+  mirostat_eta?: number;
+  mirostat_tau?: number;
+  mirostat?: number;
+  num_batch?: number;
+  num_ctx?: number;
+  num_gpu?: number;
+  num_gqa?: number;
+  num_keep?: number;
+  num_predict?: number;
+  num_thread?: number;
+  penalize_newline?: boolean;
+  presence_penalty?: number;
+  repeat_last_n?: number;
+  repeat_penalty?: number;
   rope_frequency_base?: number;
   rope_frequency_scale?: number;
-  typical_p?: number;
-  repeat_last_n?: number;
-  temperature?: number;
-  repeat_penalty?: number;
-  presence_penalty?: number;
-  frequency_penalty?: number;
-  mirostat?: number;
-  mirostat_tau?: number;
-  mirostat_eta?: number;
-  penalize_newline?: boolean;
+  seed?: number;
   stop?: string[];
-  num_thread?: number;
+  stream?: boolean;
+  temperature?: number;
+  tfs_z?: number;
+  top_k?: number;
+  top_p?: number;
+  typical_p?: number;
+  use_mlock?: boolean;
+  use_mmap?: boolean;
+  useNUMA?: boolean;
+  vocab_only?: boolean;
 }
 
 const OllamaCompletionOptionKeys = new Set<keyof OllamaCompletionOptions>([
-  'num_predict',
-  'top_k',
-  'top_p',
-  'tfs_z',
-  'seed',
-  'useNUMA',
-  'num_ctx',
-  'num_keep',
-  'num_batch',
-  'num_gqa',
-  'num_gpu',
-  'main_gpu',
-  'low_vram',
-  'f16_kv',
-  'logits_all',
-  'vocab_only',
-  'use_mmap',
-  'use_mlock',
   'embedding_only',
+  'f16_kv',
+  'frequency_penalty',
+  'logits_all',
+  'low_vram',
+  'main_gpu',
+  'mirostat_eta',
+  'mirostat_tau',
+  'mirostat',
+  'num_batch',
+  'num_ctx',
+  'num_gpu',
+  'num_gqa',
+  'num_keep',
+  'num_predict',
+  'num_thread',
+  'penalize_newline',
+  'presence_penalty',
+  'repeat_last_n',
+  'repeat_penalty',
   'rope_frequency_base',
   'rope_frequency_scale',
-  'typical_p',
-  'repeat_last_n',
-  'temperature',
-  'repeat_penalty',
-  'presence_penalty',
-  'frequency_penalty',
-  'mirostat',
-  'mirostat_tau',
-  'mirostat_eta',
-  'penalize_newline',
+  'seed',
   'stop',
-  'num_thread',
+  'stream',
+  'temperature',
+  'tfs_z',
+  'top_k',
+  'top_p',
+  'typical_p',
+  'use_mlock',
+  'use_mmap',
+  'useNUMA',
+  'vocab_only',
 ]);
 
 interface OllamaCompletionJsonL {
@@ -137,6 +139,7 @@ export class OllamaCompletionProvider implements ApiProvider {
     const params = {
       model: this.modelName,
       prompt,
+      stream: this.config.stream ?? false,
       options: Object.keys(this.config).reduce(
         (options, key) => {
           const optionName = key as keyof OllamaCompletionOptions;
@@ -171,17 +174,16 @@ export class OllamaCompletionProvider implements ApiProvider {
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
           fetchOptions,
           REQUEST_TIMEOUT_MS,
-          'text'
+          'text',
         );
         responseData = cachedResponse.data;
         cached = cachedResponse.cached;
       } else {
         const response = await fetch(
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
-          fetchOptions
+          fetchOptions,
         );
         responseData = await response.text();
-        cached = false;
       }
     } catch (err) {
       return {
@@ -197,23 +199,29 @@ export class OllamaCompletionProvider implements ApiProvider {
     }
 
     try {
-      const output = responseData
-        .split('\n')
-        .filter((line: string) => line.trim() !== '')
-        .map((line: string) => {
-          const parsed = JSON.parse(line) as OllamaCompletionJsonL;
-          if (parsed.response) {
-            return parsed.response;
-          }
-          return null;
-        })
-        .filter((s: string | null) => s !== null)
-        .join('');
+      if (this.config.stream) {
+        // If streaming, we need to parse multiple JSON lines
+        const output = responseData
+          .split('\n')
+          .filter((line: string) => line.trim() !== '')
+          .map((line: string) => {
+            const parsed = JSON.parse(line) as OllamaCompletionJsonL;
+            return parsed.response || '';
+          })
+          .join('');
 
-      return {
-        output,
-        cached,
-      };
+        return {
+          output,
+          cached,
+        };
+      } else {
+        // If not streaming, the response is a single JSON object
+        const parsed = JSON.parse(responseData) as OllamaCompletionJsonL;
+        return {
+          output: parsed.response || '',
+          cached,
+        };
+      }
     } catch (err) {
       return {
         error: `Ollama API response error: ${String(err)}: ${responseData}`,
@@ -247,6 +255,7 @@ export class OllamaChatProvider implements ApiProvider {
     const params = {
       model: this.modelName,
       messages,
+      stream: this.config.stream ?? false,
       options: Object.keys(this.config).reduce(
         (options, key) => {
           const optionName = key as keyof OllamaCompletionOptions;
@@ -281,17 +290,16 @@ export class OllamaChatProvider implements ApiProvider {
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
           fetchOptions,
           REQUEST_TIMEOUT_MS,
-          'text'
+          'text',
         );
         responseData = cachedResponse.data;
         cached = cachedResponse.cached;
       } else {
         const response = await fetch(
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
-          fetchOptions
+          fetchOptions,
         );
         responseData = await response.text();
-        cached = false;
       }
     } catch (err) {
       return {
@@ -307,23 +315,29 @@ export class OllamaChatProvider implements ApiProvider {
     }
 
     try {
-      const output = responseData
-        .split('\n')
-        .filter((line: string) => line.trim() !== '')
-        .map((line: string) => {
-          const parsed = JSON.parse(line) as OllamaChatJsonL;
-          if (parsed.message?.content) {
-            return parsed.message.content;
-          }
-          return null;
-        })
-        .filter((s: string | null) => s !== null)
-        .join('');
+      if (this.config.stream) {
+        // If streaming, we need to parse multiple JSON lines
+        const output = responseData
+          .split('\n')
+          .filter((line: string) => line.trim() !== '')
+          .map((line: string) => {
+            const parsed = JSON.parse(line) as OllamaChatJsonL;
+            return parsed.message?.content || '';
+          })
+          .join('');
 
-      return {
-        output,
-        cached,
-      };
+        return {
+          output,
+          cached,
+        };
+      } else {
+        // If not streaming, the response is a single JSON object
+        const parsed = JSON.parse(responseData) as OllamaChatJsonL;
+        return {
+          output: parsed.message?.content || '',
+          cached,
+        };
+      }
     } catch (err) {
       return {
         error: `Ollama API response error: ${String(err)}: ${responseData}`,
@@ -358,13 +372,13 @@ export class OllamaEmbeddingProvider extends OllamaCompletionProvider {
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/embeddings`,
           fetchOptions,
           REQUEST_TIMEOUT_MS,
-          'json'
+          'json',
         );
         responseData = cachedResponse.data;
       } else {
         const response = await fetch(
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/embeddings`,
-          fetchOptions
+          fetchOptions,
         );
         responseData = await response.json();
       }
