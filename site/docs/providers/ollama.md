@@ -12,6 +12,7 @@ The `ollama` provider is compatible with [Ollama](https://github.com/jmorganca/o
 
 You can use the `/api/generate` endpoint by specifying any of the following providers from the [Ollama library](https://ollama.ai/library):
 
+- `ollama:completion:llama3.1:text`
 - `ollama:completion:llama3:text`
 - `ollama:completion:llama2:text`
 - `ollama:completion:llama2-uncensored`
@@ -19,6 +20,7 @@ You can use the `/api/generate` endpoint by specifying any of the following prov
 - `ollama:completion:mistral`
 - `ollama:completion:mixtral`
 - `ollama:completion:phi`
+- `ollama:completion:gemma2`
 - `ollama:completion:gemma`
 - `ollama:completion:qwen`
 - `ollama:completion:deepseek-coder`
@@ -29,6 +31,10 @@ You can use the `/api/generate` endpoint by specifying any of the following prov
 
 Use the `/api/chat` endpoint for chat-formatted prompts:
 
+- `ollama:chat:llama3.1`
+- `ollama:chat:llama3.1:8b`
+- `ollama:chat:llama3.1:70b`
+- `ollama:chat:llama3.1:405b`
 - `ollama:chat:llama3`
 - `ollama:chat:llama3:8b`
 - `ollama:chat:llama3:70b`
@@ -39,6 +45,10 @@ Use the `/api/chat` endpoint for chat-formatted prompts:
 - `ollama:chat:mistral`
 - `ollama:chat:mixtral:8x7b`
 - `ollama:chat:mixtral:8x22b`
+- `ollama:chat:gemma2`
+- `ollama:chat:gemma2:2b`
+- `ollama:chat:gemma2:9b`
+- `ollama:chat:gemma2:27b`
 - `ollama:chat:gemma`
 - `ollama:chat:phi`
 - ... and many more
