@@ -1,4 +1,4 @@
-import { fetchWithCache } from '../cache';
+import { fetchWithCache, isCacheEnabled } from '../cache';
 import { getEnvString } from '../envars';
 import logger from '../logger';
 import type { ApiProvider, ProviderEmbeddingResponse, ProviderResponse } from '../types';
@@ -152,37 +152,52 @@ export class OllamaCompletionProvider implements ApiProvider {
     };
 
     logger.debug(`Calling Ollama API: ${JSON.stringify(params)}`);
-    let response;
+    let responseData: string;
+    let cached = false;
     try {
-      response = await fetchWithCache(
-        `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(getEnvString('OLLAMA_API_KEY')
-              ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
-              : {}),
-          },
-          body: JSON.stringify(params),
+      const fetchOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getEnvString('OLLAMA_API_KEY')
+            ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
+            : {}),
         },
-        REQUEST_TIMEOUT_MS,
-        'text',
-      );
+        body: JSON.stringify(params),
+      };
+
+      if (isCacheEnabled()) {
+        const cachedResponse = await fetchWithCache(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
+          fetchOptions,
+          REQUEST_TIMEOUT_MS,
+          'text'
+        );
+        responseData = cachedResponse.data;
+        cached = cachedResponse.cached;
+      } else {
+        const response = await fetch(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
+          fetchOptions
+        );
+        responseData = await response.text();
+        cached = false;
+      }
     } catch (err) {
       return {
-        error: `API call error: ${String(err)}. Output:\n${response?.data}`,
+        error: `API call error: ${String(err)}`,
       };
     }
-    logger.debug(`\tOllama generate API response: ${response.data}`);
-    if (response.data.error) {
+    logger.debug(`\tOllama generate API response: ${responseData}`);
+    if (responseData.includes('"error":')) {
+      const errorData = JSON.parse(responseData);
       return {
-        error: `Ollama error: ${response.data.error}`,
+        error: `Ollama error: ${errorData.error}`,
       };
     }
 
     try {
-      const output = response.data
+      const output = responseData
         .split('\n')
         .filter((line: string) => line.trim() !== '')
         .map((line: string) => {
@@ -197,10 +212,11 @@ export class OllamaCompletionProvider implements ApiProvider {
 
       return {
         output,
+        cached,
       };
     } catch (err) {
       return {
-        error: `Ollama API response error: ${String(err)}: ${JSON.stringify(response.data)}`,
+        error: `Ollama API response error: ${String(err)}: ${responseData}`,
       };
     }
   }
@@ -246,37 +262,52 @@ export class OllamaChatProvider implements ApiProvider {
     };
 
     logger.debug(`Calling Ollama API: ${JSON.stringify(params)}`);
-    let response;
+    let responseData: string;
+    let cached = false;
     try {
-      response = await fetchWithCache(
-        `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(getEnvString('OLLAMA_API_KEY')
-              ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
-              : {}),
-          },
-          body: JSON.stringify(params),
+      const fetchOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getEnvString('OLLAMA_API_KEY')
+            ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
+            : {}),
         },
-        REQUEST_TIMEOUT_MS,
-        'text',
-      );
+        body: JSON.stringify(params),
+      };
+
+      if (isCacheEnabled()) {
+        const cachedResponse = await fetchWithCache(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
+          fetchOptions,
+          REQUEST_TIMEOUT_MS,
+          'text'
+        );
+        responseData = cachedResponse.data;
+        cached = cachedResponse.cached;
+      } else {
+        const response = await fetch(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
+          fetchOptions
+        );
+        responseData = await response.text();
+        cached = false;
+      }
     } catch (err) {
       return {
-        error: `API call error: ${String(err)}. Output:\n${response?.data}`,
+        error: `API call error: ${String(err)}`,
       };
     }
-    logger.debug(`\tOllama generate API response: ${response.data}`);
-    if (response.data.error) {
+    logger.debug(`\tOllama generate API response: ${responseData}`);
+    if (responseData.includes('"error":')) {
+      const errorData = JSON.parse(responseData);
       return {
-        error: `Ollama error: ${response.data.error}`,
+        error: `Ollama error: ${errorData.error}`,
       };
     }
 
     try {
-      const output = response.data
+      const output = responseData
         .split('\n')
         .filter((line: string) => line.trim() !== '')
         .map((line: string) => {
@@ -291,10 +322,11 @@ export class OllamaChatProvider implements ApiProvider {
 
       return {
         output,
+        cached,
       };
     } catch (err) {
       return {
-        error: `Ollama API response error: ${String(err)}: ${JSON.stringify(response.data)}`,
+        error: `Ollama API response error: ${String(err)}: ${responseData}`,
       };
     }
   }
@@ -308,41 +340,50 @@ export class OllamaEmbeddingProvider extends OllamaCompletionProvider {
     };
 
     logger.debug(`Calling Ollama API: ${JSON.stringify(params)}`);
-    let response;
+    let responseData: any;
     try {
-      response = await fetchWithCache(
-        `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/embeddings`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(getEnvString('OLLAMA_API_KEY')
-              ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
-              : {}),
-          },
-          body: JSON.stringify(params),
+      const fetchOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getEnvString('OLLAMA_API_KEY')
+            ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
+            : {}),
         },
-        REQUEST_TIMEOUT_MS,
-        'json',
-      );
+        body: JSON.stringify(params),
+      };
+
+      if (isCacheEnabled()) {
+        const cachedResponse = await fetchWithCache(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/embeddings`,
+          fetchOptions,
+          REQUEST_TIMEOUT_MS,
+          'json'
+        );
+        responseData = cachedResponse.data;
+      } else {
+        const response = await fetch(
+          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/embeddings`,
+          fetchOptions
+        );
+        responseData = await response.json();
+      }
     } catch (err) {
       return {
         error: `API call error: ${String(err)}`,
       };
     }
-    logger.debug(`\tOllama embeddings API response: ${JSON.stringify(response.data)}`);
+    logger.debug(`\tOllama embeddings API response: ${JSON.stringify(responseData)}`);
 
     try {
-      const embedding = response.data.embedding as number[];
+      const embedding = responseData.embedding as number[];
       if (!embedding) {
         throw new Error('No embedding found in Ollama embeddings API response');
       }
-      return {
-        embedding,
-      };
+      return { embedding };
     } catch (err) {
       return {
-        error: `API response error: ${String(err)}: ${JSON.stringify(response.data)}`,
+        error: `API response error: ${String(err)}: ${JSON.stringify(responseData)}`,
       };
     }
   }
