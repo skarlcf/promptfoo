@@ -201,11 +201,13 @@ export class OllamaCompletionProvider implements ApiProvider {
     try {
       if (this.config.stream) {
         // If streaming, we need to parse multiple JSON lines
+        let totalTokens = 0;
         const output = responseData
           .split('\n')
           .filter((line: string) => line.trim() !== '')
           .map((line: string) => {
             const parsed = JSON.parse(line) as OllamaCompletionJsonL;
+            totalTokens += parsed.eval_count || 0;
             return parsed.response || '';
           })
           .join('');
@@ -213,6 +215,11 @@ export class OllamaCompletionProvider implements ApiProvider {
         return {
           output,
           cached,
+          tokenUsage: {
+            total: totalTokens,
+            prompt: 0, // Ollama doesn't provide separate prompt token count
+            completion: totalTokens,
+          },
         };
       } else {
         // If not streaming, the response is a single JSON object
@@ -220,6 +227,11 @@ export class OllamaCompletionProvider implements ApiProvider {
         return {
           output: parsed.response || '',
           cached,
+          tokenUsage: {
+            total: parsed.eval_count || 0,
+            prompt: 0, // Ollama doesn't provide separate prompt token count
+            completion: parsed.eval_count || 0,
+          },
         };
       }
     } catch (err) {
@@ -317,11 +329,13 @@ export class OllamaChatProvider implements ApiProvider {
     try {
       if (this.config.stream) {
         // If streaming, we need to parse multiple JSON lines
+        let totalTokens = 0;
         const output = responseData
           .split('\n')
           .filter((line: string) => line.trim() !== '')
           .map((line: string) => {
             const parsed = JSON.parse(line) as OllamaChatJsonL;
+            totalTokens += parsed.eval_count || 0;
             return parsed.message?.content || '';
           })
           .join('');
@@ -329,6 +343,11 @@ export class OllamaChatProvider implements ApiProvider {
         return {
           output,
           cached,
+          tokenUsage: {
+            total: totalTokens,
+            prompt: 0, // Ollama doesn't provide separate prompt token count
+            completion: totalTokens,
+          },
         };
       } else {
         // If not streaming, the response is a single JSON object
@@ -336,6 +355,11 @@ export class OllamaChatProvider implements ApiProvider {
         return {
           output: parsed.message?.content || '',
           cached,
+          tokenUsage: {
+            total: parsed.eval_count || 0,
+            prompt: 0, // Ollama doesn't provide separate prompt token count
+            completion: parsed.eval_count || 0,
+          },
         };
       }
     } catch (err) {
