@@ -72,13 +72,25 @@ export abstract class PluginBase {
       });
 
       const finalTemplate = this.appendModifiers(renderedTemplate);
-      const { output: generatedPrompts } = await this.provider.callApi(finalTemplate);
+      const { output: generatedPrompts, error } = await this.provider.callApi(finalTemplate);
       if (delayMs > 0) {
         logger.debug(`Delaying for ${delayMs}ms`);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
 
-      invariant(typeof generatedPrompts === 'string', 'Expected generatedPrompts to be a string');
+      if (error) {
+        logger.error(
+          `Error from API provider, skipping generation for ${this.constructor.name}: ${error}`,
+        );
+        return [];
+      }
+
+      if (typeof generatedPrompts !== 'string') {
+        logger.error(
+          `Malformed response from API provider: Expected generatedPrompts to be a string, got ${typeof generatedPrompts}: ${JSON.stringify(generatedPrompts)}`,
+        );
+        return [];
+      }
       return this.parseGeneratedPrompts(generatedPrompts);
     };
     const allPrompts = await retryWithDeduplication(generatePrompts, n);
