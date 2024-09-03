@@ -1,4 +1,4 @@
-import { fetchWithCache, isCacheEnabled } from '../cache';
+import { fetchWithCache, getCache, isCacheEnabled } from '../cache';
 import { getEnvString } from '../envars';
 import logger from '../logger';
 import type { ApiProvider, ProviderEmbeddingResponse, ProviderResponse } from '../types';
@@ -116,6 +116,22 @@ interface OllamaChatJsonL {
   eval_duration?: number;
 }
 
+function getTokenUsage(data: OllamaCompletionJsonL | OllamaChatJsonL, cached: boolean): Partial<TokenUsage> {
+  const promptTokens = data.prompt_eval_count ?? 0;
+  const completionTokens = data.eval_count ?? 0;
+  const totalTokens = promptTokens + completionTokens;
+
+  if (cached) {
+    return { cached: totalTokens, total: totalTokens };
+  } else {
+    return {
+      total: totalTokens,
+      prompt: promptTokens,
+      completion: completionTokens,
+    };
+  }
+}
+
 export class OllamaCompletionProvider implements ApiProvider {
   modelName: string;
   config: OllamaCompletionOptions;
@@ -155,40 +171,55 @@ export class OllamaCompletionProvider implements ApiProvider {
     };
 
     logger.debug(`Calling Ollama API: ${JSON.stringify(params)}`);
+    const cacheKey = `ollama:completion:${this.modelName}:${this.config.stream}:${prompt}`;
     let responseData: string;
     let cached = false;
-    try {
-      const fetchOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(getEnvString('OLLAMA_API_KEY')
-            ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
-            : {}),
-        },
-        body: JSON.stringify(params),
-      };
 
-      if (isCacheEnabled()) {
-        const cachedResponse = await fetchWithCache(
-          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
-          fetchOptions,
-          REQUEST_TIMEOUT_MS,
-          'text',
-        );
-        responseData = cachedResponse.data;
-        cached = cachedResponse.cached;
-      } else {
+    if (isCacheEnabled()) {
+      try {
+        const cache = await getCache();
+        const cachedResponse = await cache.get(cacheKey);
+        if (cachedResponse) {
+          responseData = cachedResponse as string;
+          cached = true;
+        }
+      } catch (err) {
+        logger.warn(`Failed to get cached response: ${String(err)}`);
+      }
+    }
+
+    if (!cached) {
+      try {
+        const fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(getEnvString('OLLAMA_API_KEY')
+              ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
+              : {}),
+          },
+          body: JSON.stringify(params),
+        };
+
         const response = await fetch(
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/generate`,
           fetchOptions,
         );
         responseData = await response.text();
+        
+        if (isCacheEnabled()) {
+          try {
+            const cache = await getCache();
+            await cache.set(cacheKey, responseData);
+          } catch (err) {
+            logger.warn(`Failed to cache response: ${String(err)}`);
+          }
+        }
+      } catch (err) {
+        return {
+          error: `API call error: ${String(err)}`,
+        };
       }
-    } catch (err) {
-      return {
-        error: `API call error: ${String(err)}`,
-      };
     }
     logger.debug(`\tOllama generate API response: ${responseData}`);
     if (responseData.includes('"error":')) {
@@ -203,11 +234,7 @@ export class OllamaCompletionProvider implements ApiProvider {
       return {
         output: parsed.response || '',
         cached,
-        tokenUsage: {
-          total: parsed.eval_count || 0,
-          prompt: 0, // Ollama doesn't provide separate prompt token count
-          completion: parsed.eval_count || 0,
-        },
+        tokenUsage: getTokenUsage(parsed, cached),
       };
     } catch (err) {
       return {
@@ -258,40 +285,55 @@ export class OllamaChatProvider implements ApiProvider {
     };
 
     logger.debug(`Calling Ollama API: ${JSON.stringify(params)}`);
+    const cacheKey = `ollama:chat:${this.modelName}:${this.config.stream}:${JSON.stringify(messages)}`;
     let responseData: string;
     let cached = false;
-    try {
-      const fetchOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(getEnvString('OLLAMA_API_KEY')
-            ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
-            : {}),
-        },
-        body: JSON.stringify(params),
-      };
 
-      if (isCacheEnabled()) {
-        const cachedResponse = await fetchWithCache(
-          `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
-          fetchOptions,
-          REQUEST_TIMEOUT_MS,
-          'text',
-        );
-        responseData = cachedResponse.data;
-        cached = cachedResponse.cached;
-      } else {
+    if (isCacheEnabled()) {
+      try {
+        const cache = await getCache();
+        const cachedResponse = await cache.get(cacheKey);
+        if (cachedResponse) {
+          responseData = cachedResponse as string;
+          cached = true;
+        }
+      } catch (err) {
+        logger.warn(`Failed to get cached response: ${String(err)}`);
+      }
+    }
+
+    if (!cached) {
+      try {
+        const fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(getEnvString('OLLAMA_API_KEY')
+              ? { Authorization: `Bearer ${getEnvString('OLLAMA_API_KEY')}` }
+              : {}),
+          },
+          body: JSON.stringify(params),
+        };
+
         const response = await fetch(
           `${getEnvString('OLLAMA_BASE_URL') || 'http://localhost:11434'}/api/chat`,
           fetchOptions,
         );
         responseData = await response.text();
+        
+        if (isCacheEnabled()) {
+          try {
+            const cache = await getCache();
+            await cache.set(cacheKey, responseData);
+          } catch (err) {
+            logger.warn(`Failed to cache response: ${String(err)}`);
+          }
+        }
+      } catch (err) {
+        return {
+          error: `API call error: ${String(err)}`,
+        };
       }
-    } catch (err) {
-      return {
-        error: `API call error: ${String(err)}`,
-      };
     }
     logger.debug(`\tOllama generate API response: ${responseData}`);
     if (responseData.includes('"error":')) {
@@ -306,11 +348,7 @@ export class OllamaChatProvider implements ApiProvider {
       return {
         output: parsed.message?.content || '',
         cached,
-        tokenUsage: {
-          total: parsed.eval_count || 0,
-          prompt: 0, // Ollama doesn't provide separate prompt token count
-          completion: parsed.eval_count || 0,
-        },
+        tokenUsage: getTokenUsage(parsed, cached),
       };
     } catch (err) {
       return {
