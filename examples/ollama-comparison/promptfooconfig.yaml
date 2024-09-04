@@ -2,7 +2,7 @@ prompts:
   - file://./prompts/llama_prompt.txt
 
 providers:
-  - id: ollama:llama3
+  - id: ollama:llama3.1:8b
     config:
       num_predict: 1024
       stream: true
