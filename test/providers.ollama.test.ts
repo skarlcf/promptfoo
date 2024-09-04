@@ -6,6 +6,7 @@ import {
   OllamaChatProvider,
   OllamaEmbeddingProvider,
 } from '../src/providers/ollama';
+import { REQUEST_TIMEOUT_MS } from '../src/providers/shared';
 
 jest.mock('../src/cache');
 jest.mock('../src/envars');
@@ -18,14 +19,14 @@ describe('Ollama Providers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(isCacheEnabled).mockReturnValue(false);
-    jest.mocked(getEnvString).mockImplementation((key) => {
+    jest.mocked(getEnvString).mockImplementation((key: string, defaultValue?: string): string => {
       if (key === 'OLLAMA_BASE_URL') {
         return 'http://localhost:11434';
       }
       if (key === 'OLLAMA_API_KEY') {
-        return undefined;
+        return defaultValue || '';
       }
-      return undefined;
+      return defaultValue || '';
     });
   });
 
@@ -57,8 +58,8 @@ describe('Ollama Providers', () => {
         output: 'Great question! The sky appears blue',
         cached: false,
         tokenUsage: {
-          total: 216,
-          prompt: 0,
+          total: 227,
+          prompt: 11,
           completion: 216,
         },
       });
@@ -74,7 +75,7 @@ describe('Ollama Providers', () => {
            {"model":"llama2:13b","created_at":"2023-08-08T21:50:35.0551Z","response":" sky","done":false,"eval_count":1}
            {"model":"llama2:13b","created_at":"2023-08-08T21:50:35.086103Z","response":" appears","done":false,"eval_count":1}
            {"model":"llama2:13b","created_at":"2023-08-08T21:50:35.117166Z","response":" blue","done":false,"eval_count":1}
-           {"model":"llama2:13b","created_at":"2023-08-08T21:50:41.695299Z","response":"","done":true,"eval_count":0}`,
+           {"model":"llama2:13b","created_at":"2023-08-08T21:50:41.695299Z","response":"","done":true,"prompt_eval_count":5,"eval_count":0}`,
         ),
       };
       mockFetch.mockResolvedValue(mockResponse);
@@ -87,8 +88,8 @@ describe('Ollama Providers', () => {
         output: 'Great question! The sky appears blue',
         cached: false,
         tokenUsage: {
-          total: 8,
-          prompt: 0,
+          total: 13,
+          prompt: 5,
           completion: 8,
         },
       });
@@ -136,8 +137,8 @@ describe('Ollama Providers', () => {
         output: 'Because of Rayleigh scattering.',
         cached: false,
         tokenUsage: {
-          total: 6,
-          prompt: 0,
+          total: 41,
+          prompt: 35,
           completion: 6,
         },
       });
@@ -184,6 +185,7 @@ describe('Ollama Providers', () => {
           model: 'llama2:13b',
           response: 'Cached response',
           done: true,
+          prompt_eval_count: 10,
           eval_count: 5,
         }),
         cached: true,
@@ -193,13 +195,22 @@ describe('Ollama Providers', () => {
       const result = await provider.callApi('Cached prompt');
 
       expect(fetchWithCache).toHaveBeenCalledTimes(1);
+      expect(fetchWithCache).toHaveBeenCalledWith(
+        'http://localhost:11434/api/generate',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: expect.stringContaining('"prompt":"Cached prompt"'),
+        }),
+        REQUEST_TIMEOUT_MS,
+        'text',
+      );
       expect(result).toEqual({
         output: 'Cached response',
         cached: true,
         tokenUsage: {
-          total: 5,
-          prompt: 0,
-          completion: 5,
+          cached: 15,
+          total: 15,
         },
       });
     });
