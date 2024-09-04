@@ -3,6 +3,7 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "apidevtools",
+    "codellama",
     "cybercrime",
     "Dedup",
     "deduped",
@@ -11,6 +12,7 @@
     "logits",
     "mirostat",
     "mitigations",
+    "Mixtral",
     "mlock",
     "mmap",
     "NUMA",

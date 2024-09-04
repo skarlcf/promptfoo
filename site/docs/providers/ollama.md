@@ -8,27 +8,39 @@ The `ollama` provider is compatible with [Ollama](https://github.com/jmorganca/o
 
 You can use its `/api/generate` endpoint by specifying any of the following providers from the [Ollama library](https://ollama.ai/library):
 
-- `ollama:completion:llama3:text`
-- `ollama:completion:llama2:text`
-- `ollama:completion:llama2-uncensored`
 - `ollama:completion:codellama`
+- `ollama:completion:gemma2:text`
+- `ollama:completion:llama2-uncensored`
+- `ollama:completion:llama2:text`
+- `ollama:completion:llama3:text`
+- `ollama:completion:llama3.1:text`
 - `ollama:completion:orca-mini`
 - ...
 
 Or, use the `/api/chat` endpoint for chat-formatted prompts:
 
-- `ollama:chat:llama3`
-- `ollama:chat:llama3:8b`
-- `ollama:chat:llama3:70b`
-- `ollama:chat:llama2`
-- `ollama:chat:llama2:7b`
+- `ollama:chat:gemma2:27b`
+- `ollama:chat:gemma2:2b`
+- `ollama:chat:gemma2:9b`
+- `ollama:chat:gemma2`
 - `ollama:chat:llama2:13b`
 - `ollama:chat:llama2:70b`
-- `ollama:chat:mixtral:8x7b`
+- `ollama:chat:llama2:7b`
+- `ollama:chat:llama2`
+- `ollama:chat:llama3:70b`
+- `ollama:chat:llama3:8b`
+- `ollama:chat:llama3.1:405b`
+- `ollama:chat:llama3.1:70b`
+- `ollama:chat:llama3.1:8b`
+- `ollama:chat:llama3.1`
+- `ollama:chat:llama3`
 - `ollama:chat:mixtral:8x22b`
+- `ollama:chat:mixtral:8x7b`
 - ...
 
 We also support the `/api/embeddings` endpoint via `ollama:embeddings:<model name>` for model-graded assertions such as [similarity](/docs/configuration/expected-outputs/similar/).
+
+## Configuration
 
 Supported environment variables:
 
@@ -43,7 +55,14 @@ providers:
   - id: ollama:llama2
     config:
       num_predict: 1024
+      stream: false
 ```
+
+Supported configuration options include:
+
+- `num_predict`: Maximum number of tokens to predict (default: no limit)
+- `stream`: Whether to stream the response (default: true)
+- Other options as supported by the Ollama API (e.g., `temperature`, `top_k`, `top_p`, etc.)
 
 ## `localhost` and IPv4 vs IPv6
 

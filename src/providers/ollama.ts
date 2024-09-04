@@ -31,6 +31,7 @@ const OllamaCompletionOptionsSchema = z.object({
   rope_frequency_scale: z.number().optional(),
   seed: z.number().optional(),
   stop: z.array(z.string()).optional(),
+  stream: z.boolean().optional(),
   temperature: z.number().optional(),
   tfs_z: z.number().optional(),
   top_k: z.number().optional(),
