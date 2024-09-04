@@ -1,81 +1,52 @@
+import { z } from 'zod';
 import { fetchWithCache } from '../cache';
 import { getEnvString } from '../envars';
 import logger from '../logger';
 import type { ApiProvider, ProviderEmbeddingResponse, ProviderResponse } from '../types';
 import { REQUEST_TIMEOUT_MS, parseChatPrompt } from './shared';
 
-interface OllamaCompletionOptions {
-  // From https://github.com/jmorganca/ollama/blob/v0.1.0/api/types.go#L161
-  num_predict?: number;
-  top_k?: number;
-  top_p?: number;
-  tfs_z?: number;
-  seed?: number;
-  useNUMA?: boolean;
-  num_ctx?: number;
-  num_keep?: number;
-  num_batch?: number;
-  num_gqa?: number;
-  num_gpu?: number;
-  main_gpu?: number;
-  low_vram?: boolean;
-  f16_kv?: boolean;
-  logits_all?: boolean;
-  vocab_only?: boolean;
-  use_mmap?: boolean;
-  use_mlock?: boolean;
-  embedding_only?: boolean;
-  rope_frequency_base?: number;
-  rope_frequency_scale?: number;
-  typical_p?: number;
-  repeat_last_n?: number;
-  temperature?: number;
-  repeat_penalty?: number;
-  presence_penalty?: number;
-  frequency_penalty?: number;
-  mirostat?: number;
-  mirostat_tau?: number;
-  mirostat_eta?: number;
-  penalize_newline?: boolean;
-  stop?: string[];
-  num_thread?: number;
-}
+// From https://github.com/jmorganca/ollama/blob/v0.1.0/api/types.go#L161
+const OllamaCompletionOptionsSchema = z.object({
+  embedding_only: z.boolean().optional(),
+  f16_kv: z.boolean().optional(),
+  frequency_penalty: z.number().optional(),
+  logits_all: z.boolean().optional(),
+  low_vram: z.boolean().optional(),
+  main_gpu: z.number().optional(),
+  mirostat_eta: z.number().optional(),
+  mirostat_tau: z.number().optional(),
+  mirostat: z.number().optional(),
+  num_batch: z.number().optional(),
+  num_ctx: z.number().optional(),
+  num_gpu: z.number().optional(),
+  num_gqa: z.number().optional(),
+  num_keep: z.number().optional(),
+  num_predict: z.number().optional(),
+  num_thread: z.number().optional(),
+  penalize_newline: z.boolean().optional(),
+  presence_penalty: z.number().optional(),
+  repeat_last_n: z.number().optional(),
+  repeat_penalty: z.number().optional(),
+  rope_frequency_base: z.number().optional(),
+  rope_frequency_scale: z.number().optional(),
+  seed: z.number().optional(),
+  stop: z.array(z.string()).optional(),
+  temperature: z.number().optional(),
+  tfs_z: z.number().optional(),
+  top_k: z.number().optional(),
+  top_p: z.number().optional(),
+  typical_p: z.number().optional(),
+  use_mlock: z.boolean().optional(),
+  use_mmap: z.boolean().optional(),
+  useNUMA: z.boolean().optional(),
+  vocab_only: z.boolean().optional(),
+});
 
-const OllamaCompletionOptionKeys = new Set<keyof OllamaCompletionOptions>([
-  'num_predict',
-  'top_k',
-  'top_p',
-  'tfs_z',
-  'seed',
-  'useNUMA',
-  'num_ctx',
-  'num_keep',
-  'num_batch',
-  'num_gqa',
-  'num_gpu',
-  'main_gpu',
-  'low_vram',
-  'f16_kv',
-  'logits_all',
-  'vocab_only',
-  'use_mmap',
-  'use_mlock',
-  'embedding_only',
-  'rope_frequency_base',
-  'rope_frequency_scale',
-  'typical_p',
-  'repeat_last_n',
-  'temperature',
-  'repeat_penalty',
-  'presence_penalty',
-  'frequency_penalty',
-  'mirostat',
-  'mirostat_tau',
-  'mirostat_eta',
-  'penalize_newline',
-  'stop',
-  'num_thread',
-]);
+type OllamaCompletionOptions = z.infer<typeof OllamaCompletionOptionsSchema>;
+
+const OllamaCompletionOptionKeys = new Set<keyof OllamaCompletionOptions>(
+  Object.keys(OllamaCompletionOptionsSchema.shape) as (keyof OllamaCompletionOptions)[],
+);
 
 interface OllamaCompletionJsonL {
   model: string;
