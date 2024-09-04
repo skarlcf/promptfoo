@@ -1,11 +1,11 @@
 prompts:
-  - id: file://prompts/openai_prompt.json
+  - id: file://./prompts/openai_prompt.json
     label: openai_prompt
-  - id: prompts/llama_prompt.txt
+  - id: file://./prompts/llama_prompt.txt
     label: llama_prompt
 
 providers:
-  - id: ollama:llama2
+  - id: ollama:llama3.1:8b
     prompts:
       - llama_prompt
     config:
@@ -15,7 +15,7 @@ providers:
       - llama_prompt
     config:
       num_predict: 1024
-  - id: openai:gpt-3.5-turbo
+  - id: openai:gpt-4o-mini
     prompts:
       - openai_prompt
 
