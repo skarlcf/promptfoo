@@ -11,8 +11,7 @@ import { getConfigDirectoryPath } from '../util/config';
 let dbInstance:
   | ReturnType<typeof drizzle>
   | ReturnType<typeof drizzleNode>
-  | ReturnType<typeof drizzleMysql>
-  | null = null;
+  | ReturnType<typeof drizzleMysql>;
 
 export function getDbPath() {
   return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'promptfoo.db');
@@ -22,7 +21,7 @@ export function getDbSignalPath() {
   return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'evalLastWritten');
 }
 
-export function getDb() {
+export async function getDb(): Promise<typeof dbInstance> {
   if (!dbInstance) {
     const dbType = getEnvDbType();
 
@@ -43,7 +42,7 @@ export function getDb() {
         break;
       case 'mysql':
       default:
-        const connection = mysql.createConnection(
+        const connection = await mysql.createConnection(
           getEnvString('PROMPTFOO_DB_URL', 'mysql://user:pass@localhost:3306/db'),
         );
         dbInstance = drizzleMysql(connection);

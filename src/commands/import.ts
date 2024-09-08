@@ -5,7 +5,7 @@ import { evals } from '../database/tables';
 import logger from '../logger';
 import telemetry from '../telemetry';
 
-export function importCommand(program: Command) {
+export async function importCommand(program: Command) {
   program
     .command('import <file>')
     .description('Import an eval record from a JSON file')
@@ -14,7 +14,7 @@ export function importCommand(program: Command) {
         const fileContent = fs.readFileSync(file, 'utf-8');
         const evalData = JSON.parse(fileContent);
 
-        const db = getDb();
+        const db = await getDb();
         await db
           .insert(evals)
           .values({
