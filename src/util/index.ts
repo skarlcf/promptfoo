@@ -198,7 +198,7 @@ export async function writeResultsToDatabase(
 ): Promise<string> {
   createdAt = createdAt || (results.timestamp ? new Date(results.timestamp) : new Date());
   const evalId = `eval-${createdAt.toISOString().slice(0, 19)}`;
-  const db = getDb();
+  const db = await getDb();
 
   const promises = [];
   promises.push(
@@ -325,12 +325,12 @@ export async function writeResultsToDatabase(
  *
  * @returns Last n evals in descending order.
  */
-export function listPreviousResults(
+export async function listPreviousResults(
   limit: number = DEFAULT_QUERY_LIMIT,
   filterDescription?: string,
   datasetId?: string,
-): ResultLightweight[] {
-  const db = getDb();
+): Promise<ResultLightweight[]> {
+  const db = await getDb();
   const startTime = performance.now();
 
   const query = db
@@ -535,7 +535,7 @@ export function cleanupOldFileResults(remaining = RESULT_HISTORY_LENGTH) {
 export async function readResult(
   id: string,
 ): Promise<{ id: string; result: ResultsFile; createdAt: Date } | undefined> {
-  const db = getDb();
+  const db = await getDb();
   try {
     const evalResult = await db
       .select({
@@ -579,7 +579,7 @@ export async function updateResult(
   newConfig?: Partial<UnifiedConfig>,
   newTable?: EvaluateTable,
 ): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   try {
     // Fetch the existing eval data from the database
     const existingEval = await db
@@ -622,7 +622,7 @@ export async function updateResult(
 }
 
 export async function getLatestEval(filterDescription?: string): Promise<ResultsFile | undefined> {
-  const db = getDb();
+  const db = await getDb();
   let latestResults = await db
     .select({
       id: evals.id,
@@ -660,7 +660,7 @@ export async function getPromptsWithPredicate(
   limit: number,
 ): Promise<PromptWithMetadata[]> {
   // TODO(ian): Make this use a proper database query
-  const db = getDb();
+  const db = await getDb();
   const evals_ = await db
     .select({
       id: evals.id,
@@ -747,7 +747,7 @@ export async function getTestCasesWithPredicate(
   predicate: (result: ResultsFile) => boolean,
   limit: number,
 ): Promise<TestCasesWithMetadata[]> {
-  const db = getDb();
+  const db = await getDb();
   const evals_ = await db
     .select({
       id: evals.id,
@@ -851,7 +851,7 @@ export async function getEvalsWithPredicate(
   predicate: (result: ResultsFile) => boolean,
   limit: number,
 ): Promise<EvalWithMetadata[]> {
-  const db = getDb();
+  const db = await getDb();
   const evals_ = await db
     .select({
       id: evals.id,
@@ -907,7 +907,7 @@ export async function getEvalFromId(hash: string) {
 }
 
 export async function deleteEval(evalId: string) {
-  const db = getDb();
+  const db = await getDb();
   await db.transaction(async () => {
     // We need to clean up foreign keys first. We don't have onDelete: 'cascade' set on all these relationships.
     await db.delete(evalsToPrompts).where(eq(evalsToPrompts.evalId, evalId)).run();
@@ -927,7 +927,7 @@ export async function deleteEval(evalId: string) {
  * @returns {Promise<void>}
  */
 export async function deleteAllEvals(): Promise<void> {
-  const db = getDb();
+  const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(evalsToPrompts).run();
     await tx.delete(evalsToDatasets).run();
@@ -974,14 +974,14 @@ export type StandaloneEval = CompletedPrompt & {
   promptId: string | null;
 };
 
-export function getStandaloneEvals({
+export async function getStandaloneEvals({
   limit = DEFAULT_QUERY_LIMIT,
   tag,
 }: {
   limit?: number;
   tag?: { key: string; value: string };
-} = {}): StandaloneEval[] {
-  const db = getDb();
+} = {}): Promise<StandaloneEval[]> {
+  const db = await getDb();
   const results = db
     .select({
       evalId: evals.id,

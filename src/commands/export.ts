@@ -6,14 +6,14 @@ import { evals } from '../database/tables';
 import logger from '../logger';
 import telemetry from '../telemetry';
 
-export function exportCommand(program: Command) {
+export async function exportCommand(program: Command) {
   program
     .command('export <evalId>')
     .description('Export an eval record to a JSON file')
     .option('-o, --output [outputPath]', 'Output path for the exported file')
     .action(async (evalId, cmdObj) => {
       try {
-        const db = getDb();
+        const db = await getDb();
         let result;
         if (evalId === 'latest') {
           result = await db
