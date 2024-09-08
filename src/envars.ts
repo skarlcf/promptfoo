@@ -182,5 +182,5 @@ export function getEnvFloat(key: EnvVarKey, defaultValue?: number): number | und
 
 // Add this function at the end of the file
 export function getEnvDbType(): 'sqlite' | 'postgres' | 'mysql' {
-  return getEnvString('PROMPTFOO_DB_TYPE', 'mysql') as 'sqlite' | 'postgres' | 'mysql';
+  return getEnvString('PROMPTFOO_DB_TYPE', 'sqlite') as 'sqlite' | 'postgres' | 'mysql';
 }

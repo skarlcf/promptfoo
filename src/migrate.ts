@@ -6,8 +6,7 @@ import { getDb } from './database';
 import { getEnvDbType } from './envars';
 import logger from './logger';
 
-export async function migrate() {
-  const db = await getDb();
+export async function migrate(db: any, migrationsFolder: string) {
   const dbType = getEnvDbType();
 
   switch (dbType) {
@@ -31,7 +30,7 @@ export async function runDbMigrations() {
     const db = await getDb();
     const migrationsFolder = path.join(__dirname, '..', 'drizzle');
     logger.debug(`Running migrations from ${migrationsFolder}...`);
-    await migrate(db, { migrationsFolder });
+    await migrate(db, migrationsFolder);
   } catch (error) {
     logger.error('Error running database migrations:', error);
   }
