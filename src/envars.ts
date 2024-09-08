@@ -95,6 +95,10 @@ export type EnvVars = {
   GITLAB_CI?: boolean;
   JENKINS?: boolean;
   TRAVIS?: boolean;
+
+  // Add this to the EnvVars type
+  PROMPTFOO_DB_TYPE?: 'sqlite' | 'postgres' | 'mysql';
+  PROMPTFOO_DB_URL?: string;
 } & EnvOverrides;
 
 type EnvVarKey = keyof EnvVars;
@@ -174,4 +178,9 @@ export function getEnvFloat(key: EnvVarKey, defaultValue?: number): number | und
     }
   }
   return defaultValue;
+}
+
+// Add this function at the end of the file
+export function getEnvDbType(): 'sqlite' | 'postgres' | 'mysql' {
+  return getEnvString('PROMPTFOO_DB_TYPE', 'mysql') as 'sqlite' | 'postgres' | 'mysql';
 }
