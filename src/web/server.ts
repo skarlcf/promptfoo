@@ -86,9 +86,9 @@ export async function startServer(
     socket.emit('init', await getLatestEval(filterDescription));
   });
 
-  app.get('/api/results', (req, res) => {
+  app.get('/api/results', async (req, res) => {
     const datasetId = req.query.datasetId as string | undefined;
-    const previousResults = listPreviousResults(
+    const previousResults = await listPreviousResults(
       undefined /* limit */,
       filterDescription,
       datasetId,
