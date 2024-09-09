@@ -4,13 +4,19 @@
     "declarationMap": true,
     "esModuleInterop": true,
     "target": "es2020",
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "dist",
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   },
   "include": ["src/", "typings/**/*", "test/"],
   "exclude": [
@@ -19,5 +25,8 @@
     "src/web/client/**/*",
     "src/web/nextui/**/*",
     "src/workers/**/*"
-  ]
+  ],
+  "parserOptions": {
+    "plugins": ["importAttributes", "importAssertions"]
+  }
 }

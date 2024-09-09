@@ -90,7 +90,7 @@ async function main() {
   program.parse(process.argv);
 }
 
-if (require.main === module) {
+if (import.meta.url === import.meta.resolve(process.argv[1])) {
   checkNodeVersion();
   main();
 }

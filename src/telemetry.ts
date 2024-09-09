@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import packageJson from '../package.json';
+import packageJson from '../package.json' assert { type: 'json' };
 import { getEnvBool } from './envars';
 import { fetchWithTimeout } from './fetch';
 import { maybeRecordFirstRun } from './globalConfig';

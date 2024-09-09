@@ -164,7 +164,7 @@ describe('isGradingResult', () => {
 });
 
 describe('TestSuiteConfigSchema', () => {
-  const rootDir = path.join(__dirname, '..');
+  const rootDir = new URL('..', import.meta.url).pathname;
   const configFiles = globSync(`${rootDir}/examples/**/promptfooconfig.{yaml,yml,json}`);
 
   it('should find configuration files', () => {

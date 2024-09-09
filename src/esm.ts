@@ -12,7 +12,7 @@ export function getDirectory(): string {
   const __filename = fileURLToPath(import.meta.url);
   return path.dirname(__filename);
  */
-  return __dirname;
+  return path.dirname(new URL(import.meta.url).pathname);
 }
 
 export async function importModule(modulePath: string, functionName?: string) {

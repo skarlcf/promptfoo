@@ -25,7 +25,7 @@ export async function runPython(
   const pythonOptions: PythonShellOptions = {
     mode: 'text',
     pythonPath: options.pythonExecutable || getEnvString('PROMPTFOO_PYTHON') || 'python',
-    scriptPath: __dirname,
+    scriptPath: new URL('.', import.meta.url).pathname,
     args: [absPath, method, tempJsonPath, outputPath],
   };
 

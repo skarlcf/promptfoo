@@ -5,7 +5,7 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: '.coverage',
   coverageProvider: 'v8',
-  extensionsToTreatAsEsm: ['.ts'],
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   modulePathIgnorePatterns: ['<rootDir>/dist', '<rootDir>/examples', '<rootDir>/node_modules'],
   setupFiles: ['<rootDir>/.jest/setEnvVars.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
@@ -16,8 +16,31 @@ const config: Config = {
     '<rootDir>/node_modules',
   ],
   transform: {
-    '^.+\\.m?[tj]sx?$': '@swc/jest',
+    '^.+\\.(t|j)sx?$': [
+      '@swc/jest',
+      {
+        jsc: {
+          parser: {
+            syntax: 'typescript',
+            tsx: false,
+            decorators: true,
+          },
+          target: 'es2020',
+          keepClassNames: true,
+          transform: {
+            legacyDecorator: true,
+            decoratorMetadata: true,
+          },
+        },
+        module: {
+          type: 'es6',
+          noInterop: false,
+        },
+        sourceMaps: 'inline',
+      },
+    ],
   },
+  testEnvironment: 'node',
 };
 
 export default config;

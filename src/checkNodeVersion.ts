@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import * as fs from 'fs';
-import * as path from 'path';
 import logger from './logger';
 
 /**
@@ -8,7 +7,7 @@ import logger from './logger';
  * @returns {string} The required Node version specified in package.json
  */
 const getRequiredNodeVersion = (): string => {
-  const packageJsonPath = path.resolve(__dirname, '../package.json');
+  const packageJsonPath = new URL('../package.json', import.meta.url).pathname;
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
   return packageJson.engines.node;
 };

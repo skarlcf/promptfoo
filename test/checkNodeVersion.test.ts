@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { checkNodeVersion } from '../src/checkNodeVersion';
 import logger from '../src/logger';
+import {jest} from '@jest/globals';
 
 jest.mock('fs');
 jest.mock('../src/logger');
