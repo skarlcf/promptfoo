@@ -2,3 +2,8 @@
 export const IS_RUNNING_LOCALLY = !process.env.NEXT_PUBLIC_HOSTED;
 
 export const USE_SUPABASE = !!process.env.NEXT_PUBLIC_PROMPTFOO_USE_SUPABASE;
+
+export enum SERVER_MODE {
+  OPEN = 'open',
+  SAAS = 'saas',
+}

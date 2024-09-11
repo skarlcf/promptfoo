@@ -18,6 +18,11 @@ const config: Config = {
   transform: {
     '^.+\\.m?[tj]sx?$': '@swc/jest',
   },
+  moduleNameMapper: {
+    '^@promptfoo/(.*)$': '<rootDir>/src/$1',
+    '^@server/(.*)$': '<rootDir>/src/server/$1',
+    '^@app/(.*)$': '<rootDir>/src/web/nextui/src/$1',
+  },
 };
 
 export default config;

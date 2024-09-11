@@ -21,3 +21,8 @@ export const SHARE_VIEW_BASE_URL =
 // Maximum width for terminal outputs.
 export const TERMINAL_MAX_WIDTH =
   process?.stdout?.columns && process?.stdout?.columns > 10 ? process?.stdout?.columns - 10 : 120;
+
+export enum SERVER_MODE {
+  OPEN = 'open',
+  SAAS = 'saas',
+}
