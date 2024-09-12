@@ -124,38 +124,58 @@ interface OpenAiSharedOptions {
   apiHost?: string;
   apiBaseUrl?: string;
   organization?: string;
+  headers?: Record<string, string>;
   cost?: number;
-  headers?: { [key: string]: string };
+  passthrough?: object;
 }
 
-export type OpenAiCompletionOptions = OpenAiSharedOptions & {
+// Common options shared between Completions and Chat Completions
+interface OpenAiSharedCompletionOptions extends OpenAiSharedOptions {
   temperature?: number;
-  /**
-   * @deprecated Use `max_completion_tokens` instead. This option is kept for backwards compatibility.
-   */
   max_tokens?: number;
-  max_completion_tokens?: number;
   top_p?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
+  stop?: string[];
+  seed?: number;
+}
+
+// Options specific to Completions (legacy)
+export type OpenAiCompletionLegacyOptions = OpenAiSharedCompletionOptions & {
   best_of?: number;
+  echo?: boolean;
+  logit_bias?: Record<string, number>;
+  logprobs?: number;
+  n?: number;
+  suffix?: string;
+  user?: string;
+};
+
+export type OpenAiChatCompletionOptions = OpenAiSharedCompletionOptions & {
+  max_completion_tokens?: number;
   functions?: OpenAiFunction[];
   function_call?: 'none' | 'auto' | { name: string };
   tools?: OpenAiTool[];
   tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function?: { name: string } };
   response_format?: { type: 'json_object' };
-  stop?: string[];
-  seed?: number;
   passthrough?: object;
-
-  /**
-   * If set, automatically call these functions when the assistant activates
-   * these function tools.
-   */
   functionToolCallbacks?: Record<
     OpenAI.FunctionDefinition['name'],
     (arg: string) => Promise<string>
   >;
+};
+
+// For backwards compatibility
+export type OpenAiCompletionOptions = OpenAiChatCompletionOptions;
+
+type OpenAiImageOptions = OpenAiSharedOptions & {
+  model?: 'dall-e-2' | 'dall-e-3';
+  n?: number;
+  quality?: 'standard' | 'hd';
+  response_format?: 'url' | 'b64_json';
+  size?: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792';
+  style?: 'vivid' | 'natural';
+  user?: string;
 };
 
 function failApiCall(err: any) {
@@ -351,11 +371,15 @@ export class OpenAiCompletionProvider extends OpenAiGenericProvider {
 
   static OPENAI_COMPLETION_MODEL_NAMES = OPENAI_COMPLETION_MODELS.map((model) => model.id);
 
-  config: OpenAiCompletionOptions;
+  config: OpenAiCompletionLegacyOptions;
 
   constructor(
     modelName: string,
-    options: { config?: OpenAiCompletionOptions; id?: string; env?: EnvOverrides } = {},
+    options: {
+      config?: Partial<OpenAiCompletionLegacyOptions>;
+      id?: string;
+      env?: EnvOverrides;
+    } = {},
   ) {
     super(modelName, options);
     this.config = options.config || {};
@@ -386,25 +410,27 @@ export class OpenAiCompletionProvider extends OpenAiGenericProvider {
     } catch (err) {
       throw new Error(`OPENAI_STOP is not a valid JSON string: ${err}`);
     }
-    const maxCompletionTokens =
-      this.config.max_completion_tokens ?? getEnvInt('OPENAI_MAX_COMPLETION_TOKENS', 1024);
     const maxTokens = this.config.max_tokens ?? getEnvInt('OPENAI_MAX_TOKENS', 1024);
 
     const body = {
       model: this.modelName,
       prompt,
       seed: this.config.seed,
-      ...(maxCompletionTokens === undefined ? {} : { max_tokens: maxCompletionTokens }),
-      ...(maxTokens === undefined ? {} : { max_tokens: maxTokens }),
+      ...(maxTokens ? { max_tokens: maxTokens } : {}),
       temperature: this.config.temperature ?? getEnvFloat('OPENAI_TEMPERATURE', 0),
       top_p: this.config.top_p ?? getEnvFloat('OPENAI_TOP_P', 1),
       presence_penalty: this.config.presence_penalty ?? getEnvFloat('OPENAI_PRESENCE_PENALTY', 0),
       frequency_penalty:
         this.config.frequency_penalty ?? getEnvFloat('OPENAI_FREQUENCY_PENALTY', 0),
       best_of: this.config.best_of ?? getEnvInt('OPENAI_BEST_OF', 1),
+      echo: this.config.echo,
+      logit_bias: this.config.logit_bias,
+      logprobs: this.config.logprobs,
+      n: this.config.n,
+      suffix: this.config.suffix,
+      user: this.config.user,
       ...(callApiOptions?.includeLogProbs ? { logprobs: callApiOptions.includeLogProbs } : {}),
       ...(stop ? { stop } : {}),
-      ...(this.config.passthrough || {}),
     };
     logger.debug(`Calling OpenAI API: ${JSON.stringify(body)}`);
     let data,
@@ -460,11 +486,11 @@ export class OpenAiChatCompletionProvider extends OpenAiGenericProvider {
 
   static OPENAI_CHAT_MODEL_NAMES = OPENAI_CHAT_MODELS.map((model) => model.id);
 
-  config: OpenAiCompletionOptions;
+  config: OpenAiChatCompletionOptions;
 
   constructor(
     modelName: string,
-    options: { config?: OpenAiCompletionOptions; id?: string; env?: EnvOverrides } = {},
+    options: { config?: OpenAiChatCompletionOptions; id?: string; env?: EnvOverrides } = {},
   ) {
     if (!OpenAiChatCompletionProvider.OPENAI_CHAT_MODEL_NAMES.includes(modelName)) {
       logger.debug(`Using unknown OpenAI chat model: ${modelName}`);
@@ -486,14 +512,15 @@ export class OpenAiChatCompletionProvider extends OpenAiGenericProvider {
 
     const messages = parseChatPrompt(prompt, [{ role: 'user', content: prompt }]);
 
+    const maxCompletionTokens =
+      this.config.max_completion_tokens ?? getEnvInt('OPENAI_MAX_COMPLETION_TOKENS', 1024);
+    const maxTokens = this.config.max_tokens ?? getEnvInt('OPENAI_MAX_TOKENS', 1024);
+
     const body = {
       model: this.modelName,
       messages,
       seed: this.config.seed,
-      max_tokens:
-        this.config.max_completion_tokens ??
-        this.config.max_tokens ??
-        Number.parseInt(process.env.OPENAI_MAX_TOKENS || '1024'),
+      max_tokens: maxCompletionTokens ?? maxTokens,
       temperature:
         this.config.temperature ?? Number.parseFloat(process.env.OPENAI_TEMPERATURE || '0'),
       top_p: this.config.top_p ?? Number.parseFloat(process.env.OPENAI_TOP_P || '1'),
@@ -848,10 +875,6 @@ export class OpenAiAssistantProvider extends OpenAiGenericProvider {
   }
 }
 
-type OpenAiImageOptions = OpenAiSharedOptions & {
-  size?: string;
-};
-
 export class OpenAiImageProvider extends OpenAiGenericProvider {
   config: OpenAiImageOptions;
 
@@ -901,17 +924,14 @@ export class OpenAiImageProvider extends OpenAiGenericProvider {
     if (!response) {
       try {
         response = await openai.images.generate({
-          model: this.modelName,
+          model: this.config.model || 'dall-e-2',
           prompt,
-          n: 1,
-          size:
-            ((this.config.size || process.env.OPENAI_IMAGE_SIZE) as
-              | '1024x1024'
-              | '256x256'
-              | '512x512'
-              | '1792x1024'
-              | '1024x1792'
-              | undefined) || '1024x1024',
+          n: this.config.n || 1,
+          quality: this.config.quality,
+          response_format: this.config.response_format || 'url',
+          size: this.config.size || '1024x1024',
+          style: this.config.style,
+          user: this.config.user,
         });
       } catch (error) {
         return {
