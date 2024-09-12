@@ -130,7 +130,11 @@ interface OpenAiSharedOptions {
 
 export type OpenAiCompletionOptions = OpenAiSharedOptions & {
   temperature?: number;
+  /**
+   * @deprecated Use `max_completion_tokens` instead. This option is kept for backwards compatibility.
+   */
   max_tokens?: number;
+  max_completion_tokens?: number;
   top_p?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
@@ -382,11 +386,16 @@ export class OpenAiCompletionProvider extends OpenAiGenericProvider {
     } catch (err) {
       throw new Error(`OPENAI_STOP is not a valid JSON string: ${err}`);
     }
+    const maxCompletionTokens =
+      this.config.max_completion_tokens ?? getEnvInt('OPENAI_MAX_COMPLETION_TOKENS', 1024);
+    const maxTokens = this.config.max_tokens ?? getEnvInt('OPENAI_MAX_TOKENS', 1024);
+
     const body = {
       model: this.modelName,
       prompt,
       seed: this.config.seed,
-      max_tokens: this.config.max_tokens ?? getEnvInt('OPENAI_MAX_TOKENS', 1024),
+      ...(maxCompletionTokens === undefined ? {} : { max_tokens: maxCompletionTokens }),
+      ...(maxTokens === undefined ? {} : { max_tokens: maxTokens }),
       temperature: this.config.temperature ?? getEnvFloat('OPENAI_TEMPERATURE', 0),
       top_p: this.config.top_p ?? getEnvFloat('OPENAI_TOP_P', 1),
       presence_penalty: this.config.presence_penalty ?? getEnvFloat('OPENAI_PRESENCE_PENALTY', 0),
@@ -482,7 +491,9 @@ export class OpenAiChatCompletionProvider extends OpenAiGenericProvider {
       messages,
       seed: this.config.seed,
       max_tokens:
-        this.config.max_tokens ?? Number.parseInt(process.env.OPENAI_MAX_TOKENS || '1024'),
+        this.config.max_completion_tokens ??
+        this.config.max_tokens ??
+        Number.parseInt(process.env.OPENAI_MAX_TOKENS || '1024'),
       temperature:
         this.config.temperature ?? Number.parseFloat(process.env.OPENAI_TEMPERATURE || '0'),
       top_p: this.config.top_p ?? Number.parseFloat(process.env.OPENAI_TOP_P || '1'),
