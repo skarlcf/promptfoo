@@ -1,9 +1,9 @@
+import { jest } from '@jest/globals';
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { checkNodeVersion } from '../src/checkNodeVersion';
 import logger from '../src/logger';
-import {jest} from '@jest/globals';
 
 jest.mock('fs');
 jest.mock('../src/logger');
@@ -28,9 +28,9 @@ describe('checkNodeVersion', () => {
 
     jest.mocked(path.resolve).mockImplementation(() => 'mocked/path/to/package.json');
     jest.mocked(fs.readFileSync).mockImplementation(() =>
-      JSON.stringify({
+      Buffer.from(JSON.stringify({
         engines: { node: '>=18.0.0' },
-      }),
+      }))
     );
   });
 
@@ -71,9 +71,9 @@ describe('checkNodeVersion', () => {
   it('should handle version strings correctly and exit if required version is not met', () => {
     setNodeVersion('v18.0.0');
     jest.mocked(fs.readFileSync).mockImplementation(() =>
-      JSON.stringify({
+      Buffer.from(JSON.stringify({
         engines: { node: '>=18.0.1' },
-      }),
+      }))
     );
 
     expect(checkNodeVersion()).toBeUndefined();
