@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import path from 'path';
+
 import { checkNodeVersion } from './checkNodeVersion';
 import { cacheCommand } from './commands/cache';
 import { configCommand } from './commands/config';

@@ -9,19 +9,20 @@
     "type": "git",
     "url": "git+https://github.com/promptfoo/promptfoo.git"
   },
-  "main": "dist/src/index.js",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "require": "./dist/src/index.js"
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     }
   },
   "workspaces": [
     "src/web/nextui",
     "site"
   ],
-  "types": "dist/src/index.d.ts",
-  "typings": "dist/src/index.d.ts",
+  "types": "./dist/types/index.d.ts",
+  "typings": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
@@ -43,7 +44,10 @@
     "build:clean": "shx rm -rf dist",
     "build:nextui": "sh src/web/nextui/build.sh",
     "build:watch": "tsc --watch",
-    "build": "tsc && shx cp src/*.html dist/src && shx cp src/python/wrapper.py dist/src/python && shx rm -rf dist/drizzle && shx cp -r drizzle dist/drizzle && npm run build:nextui && shx chmod +x dist/src/main.js",
+    "build": "npm run build:cjs && npm run build:esm && npm run build:types",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:esm": "tsc --project tsconfig.esm.json",
+    "build:types": "tsc --project tsconfig.types.json",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:webui": "npm run test --prefix src/web/nextui",
@@ -77,6 +81,9 @@
   "devDependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.650.0",
     "@azure/identity": "^4.4.1",
+    "@babel/core": "^7.25.2",
+    "@babel/parser": "^7.25.6",
+    "@babel/preset-typescript": "^7.24.7",
     "@eslint/js": "^9.10.0",
     "@libsql/client": "^0.10.0",
     "@swc/cli": "^0.4.0",
@@ -184,5 +191,13 @@
         "skipAsyncImports": true
       }
     }
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript"
+    ],
+    "plugins": [
+      "@babel/plugin-syntax-import-assertions"
+    ]
   }
 }

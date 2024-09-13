@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import * as fs from 'fs';
+
 import logger from './logger';
 
 /**

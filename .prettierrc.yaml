@@ -4,4 +4,15 @@ printWidth: 100
 bracketSpacing: true
 plugins:
   - '@trivago/prettier-plugin-sort-imports'
-importOrder: ['react', '<THIRD_PARTY_MODULES>', '^(?!.*\.css$)[./].*$', '.css$']
+  - '@babel/plugin-syntax-import-assertions'
+importOrder:
+  - '^@core/(.*)$'
+  - '^@server/(.*)$'
+  - '^@ui/(.*)$'
+  - '^[./]'
+importOrderSeparation: true
+importOrderSortSpecifiers: true
+overrides:
+  - files: '*.{ts,tsx}'
+    options:
+      parser: 'typescript'
