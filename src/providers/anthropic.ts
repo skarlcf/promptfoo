@@ -1,10 +1,10 @@
 import Anthropic, { APIError } from '@anthropic-ai/sdk';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { getCache, isCacheEnabled } from '../cache';
 import { getEnvString, getEnvFloat, getEnvInt } from '../envars';
 import logger from '../logger';
 import type { ApiProvider, EnvOverrides, ProviderResponse, TokenUsage } from '../types';
 import { maybeLoadFromExternalFile } from '../util';
-import { parseChatPrompt } from './shared';
 
 const ANTHROPIC_MODELS = [
   ...['claude-instant-1.2'].map((model) => ({
@@ -110,36 +110,121 @@ export function outputFromMessage(message: Anthropic.Messages.Message) {
     .join('\n\n');
 }
 
-interface AnthropicMessageInput {
-  role: 'user' | 'assistant' | 'system';
-  content: string | Array<Anthropic.ImageBlockParam | Anthropic.TextBlockParam>;
-  cache_control?: { type: 'ephemeral' };
+// Helper function to parse messages from text format
+function parseMessagesFromText(messages: string): ChatCompletionMessageParam[] {
+  const lines = messages.split('\n');
+  const parsedMessages: ChatCompletionMessageParam[] = [];
+
+  let currentRole: 'system' | 'user' | 'assistant' | null = null;
+  let currentContent: string[] = [];
+
+  for (const line of lines) {
+    const roleMatch = line.match(/^(system|user|assistant):\s*(.*)$/i);
+    if (roleMatch) {
+      // Save the previous message if any
+      if (currentRole && currentContent.length > 0) {
+        parsedMessages.push({
+          role: currentRole,
+          content: currentContent.join('\n').trim(),
+        });
+      }
+      currentRole = roleMatch[1].toLowerCase() as 'system' | 'user' | 'assistant';
+      const content = roleMatch[2].trim();
+      currentContent = content ? [content] : [];
+    } else if (currentRole) {
+      // Continuation of the current message content
+      currentContent.push(line.trim());
+    } else {
+      // Skip lines without a role when no current role is set
+      continue;
+    }
+  }
+
+  // Save the last message if any
+  if (currentRole && currentContent.length > 0) {
+    parsedMessages.push({
+      role: currentRole,
+      content: currentContent.join('\n').trim(),
+    });
+  }
+
+  return parsedMessages;
 }
 
-export function parseMessages(messages: string) {
-  // We need to be able to handle the 'system' role prompts that
-  // are in the style of OpenAI's chat prompts.
-  // As a result, AnthropicMessageInput is the same as Anthropic.MessageParam
-  // just with the system role added on
-  const chats = parseChatPrompt<AnthropicMessageInput[]>(messages, [
-    { role: 'user' as const, content: messages },
-  ]);
-  // Convert from OpenAI to Anthropic format
-  const systemMessage = chats.find((m) => m.role === 'system')?.content;
-  const system = typeof systemMessage === 'string' ? systemMessage : undefined;
-  const extractedMessages: Anthropic.MessageParam[] = chats
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => {
-      const role = m.role as 'user' | 'assistant';
-      if (typeof m.content === 'string') {
-        const content = [{ type: 'text' as const, text: m.content }];
-        return { role, content };
-      } else {
-        const content = [...m.content];
-        return { role, content };
+export function parseMessages(messages: string): {
+  extractedMessages: Anthropic.MessageParam[];
+  system?: string;
+} {
+  let parsedMessages: ChatCompletionMessageParam[];
+
+  // Attempt to parse the messages as JSON
+  try {
+    parsedMessages = JSON.parse(messages);
+  } catch (e) {
+    // If JSON parsing fails, parse from text format
+    parsedMessages = parseMessagesFromText(messages);
+  }
+
+  let systemMessage: string | undefined;
+
+  // Extract the system message and remove it from the message list
+  parsedMessages = parsedMessages.filter((message) => {
+    if (message.role === 'system') {
+      if (typeof message.content === 'string') {
+        systemMessage = message.content.trim();
+      } else if (Array.isArray(message.content)) {
+        // Concatenate text content
+        systemMessage = message.content
+          .filter((c) => c.type === 'text' && c.text)
+          .map((c) => c.text)
+          .join(' ')
+          .trim();
       }
-    });
-  return { system, extractedMessages };
+      return false; // Exclude system message from further processing
+    }
+    return true;
+  });
+
+  // Convert messages to Anthropic format
+  const extractedMessages: Anthropic.MessageParam[] = parsedMessages
+    .filter(
+      (message): message is ChatCompletionMessageParam =>
+        message.role === 'user' || message.role === 'assistant',
+    )
+    .map((message) => {
+      const role = message.role as 'user' | 'assistant';
+      let content: Anthropic.ContentBlock[] = [];
+
+      if (typeof message.content === 'string') {
+        const text = message.content.trim();
+        if (text) {
+          content.push({ type: 'text' as const, text });
+        }
+      } else if (Array.isArray(message.content)) {
+        content = message.content
+          .filter(
+            (c): c is { type: 'text'; text: string } =>
+              c.type === 'text' && typeof c.text === 'string' && c.text.trim() !== '',
+          )
+          .map((c) => ({ type: 'text' as const, text: c.text }));
+      }
+
+      return { role, content };
+    })
+    .filter((message) => message.content.length > 0);
+
+  // Handle the case where there are no extracted messages
+  const finalMessages: Anthropic.MessageParam[] =
+    extractedMessages.length > 0
+      ? extractedMessages
+      : systemMessage
+        ? [{ role: 'user', content: [{ type: 'text' as const, text: systemMessage }] }]
+        : [];
+
+  return {
+    extractedMessages: finalMessages,
+    system: systemMessage,
+  };
 }
 
 export function calculateCost(

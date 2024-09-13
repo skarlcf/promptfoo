@@ -76,12 +76,7 @@ describe('Anthropic', () => {
           messages: [
             {
               role: 'user',
-              content: [
-                {
-                  text: 'What is the forecast in San Francisco?',
-                  type: 'text',
-                },
-              ],
+              content: [{ type: 'text', text: 'What is the forecast in San Francisco?' }],
             },
           ],
           tools,
@@ -138,12 +133,7 @@ describe('Anthropic', () => {
           messages: [
             {
               role: 'user',
-              content: [
-                {
-                  text: 'What is the forecast in San Francisco?',
-                  type: 'text',
-                },
-              ],
+              content: [{ type: 'text', text: 'What is the forecast in San Francisco?' }],
             },
           ],
           tools,
@@ -564,13 +554,11 @@ describe('Anthropic', () => {
       expect(extractedMessages).toMatchObject([
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: dedent`user: What is the weather?
-                    assistant: The weather is sunny.`,
-            },
-          ],
+          content: [{ type: 'text', text: 'What is the weather?' }],
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'The weather is sunny.' }],
         },
       ]);
     });
@@ -582,18 +570,15 @@ describe('Anthropic', () => {
 
       const { system, extractedMessages } = parseMessages(inputMessages);
 
-      expect(system).toBeUndefined();
+      expect(system).toBe('This is a system message.');
       expect(extractedMessages).toMatchObject([
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: dedent`system: This is a system message.
-              user: What is the weather?
-              assistant: The weather is sunny.`,
-            },
-          ],
+          content: [{ type: 'text', text: 'What is the weather?' }],
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'The weather is sunny.' }],
         },
       ]);
     });
@@ -604,10 +589,74 @@ describe('Anthropic', () => {
       const { system, extractedMessages } = parseMessages(inputMessages);
 
       expect(system).toBeUndefined();
+      expect(extractedMessages).toEqual([]);
+    });
+
+    it('should handle only system message', () => {
+      const inputMessages = 'system: This is a system message.';
+
+      const { system, extractedMessages } = parseMessages(inputMessages);
+
+      expect(system).toBe('This is a system message.');
+      expect(extractedMessages).toEqual([
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'This is a system message.' }],
+        },
+      ]);
+    });
+
+    it('should handle system message with empty user and assistant messages', () => {
+      const inputMessages = dedent`
+        system: This is a system message.
+        user:
+        assistant:
+      `;
+
+      const { system, extractedMessages } = parseMessages(inputMessages);
+
+      expect(system).toBe('This is a system message.');
+      expect(extractedMessages).toEqual([
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'This is a system message.' }],
+        },
+      ]);
+    });
+
+    it('should handle mixed content types', () => {
+      const inputMessages = dedent`
+        system: This is a system message.
+        user: Hello
+        assistant: Hi there!
+        user: Show me an image
+        assistant: Here's an image: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==
+      `;
+
+      const { system, extractedMessages } = parseMessages(inputMessages);
+
+      expect(system).toBe('This is a system message.');
       expect(extractedMessages).toMatchObject([
         {
           role: 'user',
-          content: [{ type: 'text', text: '' }],
+          content: [{ type: 'text', text: 'Hello' }],
+        },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Hi there!' }],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Show me an image' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: "Here's an image: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==",
+            },
+          ],
         },
       ]);
     });
