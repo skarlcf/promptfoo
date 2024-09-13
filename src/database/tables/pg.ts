@@ -1,21 +1,22 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   text,
-  integer,
-  sqliteTable,
+  timestamp,
+  pgTable,
   primaryKey,
   index,
   uniqueIndex,
-} from 'drizzle-orm/sqlite-core';
-import type { EvaluateSummary, UnifiedConfig } from '../types';
+  jsonb,
+} from 'drizzle-orm/pg-core';
+import type { EvaluateSummary, UnifiedConfig } from '../../types';
 
 // ------------ Prompts ------------
 
-export const prompts = sqliteTable(
+export const prompts = pgTable(
   'prompts',
   {
     id: text('id').primaryKey(),
-    createdAt: integer('created_at')
+    createdAt: timestamp('created_at')
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
     prompt: text('prompt').notNull(),
@@ -27,7 +28,7 @@ export const prompts = sqliteTable(
 
 // ------------ Tags ------------
 
-export const tags = sqliteTable(
+export const tags = pgTable(
   'tags',
   {
     id: text('id').primaryKey(),
@@ -42,17 +43,17 @@ export const tags = sqliteTable(
 
 // ------------ Evals ------------
 
-export const evals = sqliteTable(
+export const evals = pgTable(
   'evals',
   {
     id: text('id').primaryKey(),
-    createdAt: integer('created_at')
+    createdAt: timestamp('created_at')
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
     author: text('author'),
     description: text('description'),
-    results: text('results', { mode: 'json' }).$type<EvaluateSummary>().notNull(),
-    config: text('config', { mode: 'json' }).$type<Partial<UnifiedConfig>>().notNull(),
+    results: jsonb('results').notNull().$type<EvaluateSummary>(),
+    config: jsonb('config').notNull().$type<Partial<UnifiedConfig>>(),
   },
   (table) => ({
     createdAtIdx: index('evals_created_at_idx').on(table.createdAt),
@@ -60,14 +61,12 @@ export const evals = sqliteTable(
   }),
 );
 
-export const evalsToPrompts = sqliteTable(
+export const evalsToPrompts = pgTable(
   'evals_to_prompts',
   {
     evalId: text('eval_id')
       .notNull()
-      .references(() => evals.id),
-    // Drizzle doesn't support this migration for sqlite, so we remove foreign keys manually.
-    //.references(() => evals.id, { onDelete: 'cascade' }),
+      .references(() => evals.id, { onDelete: 'cascade' }),
     promptId: text('prompt_id')
       .notNull()
       .references(() => prompts.id),
@@ -83,7 +82,7 @@ export const promptsRelations = relations(prompts, ({ many }) => ({
   evalsToPrompts: many(evalsToPrompts),
 }));
 
-export const evalsToTags = sqliteTable(
+export const evalsToTags = pgTable(
   'evals_to_tags',
   {
     evalId: text('eval_id')
@@ -117,12 +116,12 @@ export const evalsToTagsRelations = relations(evalsToTags, ({ one }) => ({
 
 // ------------ Datasets ------------
 
-export const datasets = sqliteTable(
+export const datasets = pgTable(
   'datasets',
   {
     id: text('id').primaryKey(),
-    tests: text('tests', { mode: 'json' }).$type<UnifiedConfig['tests']>(),
-    createdAt: integer('created_at')
+    tests: jsonb('tests').$type<UnifiedConfig['tests']>(),
+    createdAt: timestamp('created_at')
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
   },
@@ -131,14 +130,12 @@ export const datasets = sqliteTable(
   }),
 );
 
-export const evalsToDatasets = sqliteTable(
+export const evalsToDatasets = pgTable(
   'evals_to_datasets',
   {
     evalId: text('eval_id')
       .notNull()
-      .references(() => evals.id),
-    // Drizzle doesn't support this migration for sqlite, so we remove foreign keys manually.
-    //.references(() => evals.id, { onDelete: 'cascade' }),
+      .references(() => evals.id, { onDelete: 'cascade' }),
     datasetId: text('dataset_id')
       .notNull()
       .references(() => datasets.id),
@@ -183,46 +180,3 @@ export const evalsToDatasetsRelations = relations(evalsToDatasets, ({ one }) => 
     references: [datasets.id],
   }),
 }));
-
-// ------------ Outputs ------------
-// We're just recording these on eval.results for now...
-
-/*
-export const llmOutputs = sqliteTable(
-  'llm_outputs',
-  {
-    id: text('id')
-      .notNull()
-      .unique(),
-    createdAt: integer('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-    evalId: text('eval_id')
-      .notNull()
-      .references(() => evals.id),
-    promptId: text('prompt_id')
-      .notNull()
-      .references(() => prompts.id),
-    providerId: text('provider_id').notNull(),
-    vars: text('vars', {mode: 'json'}),
-    response: text('response', {mode: 'json'}),
-    error: text('error'),
-    latencyMs: integer('latency_ms'),
-    gradingResult: text('grading_result', {mode: 'json'}),
-    namedScores: text('named_scores', {mode: 'json'}),
-    cost: real('cost'),
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.id] }),
-  }),
-);
-
-export const llmOutputsRelations = relations(llmOutputs, ({ one }) => ({
-  eval: one(evals, {
-    fields: [llmOutputs.evalId],
-    references: [evals.id],
-  }),
-  prompt: one(prompts, {
-    fields: [llmOutputs.promptId],
-    references: [prompts.id],
-  }),
-}));
-*/

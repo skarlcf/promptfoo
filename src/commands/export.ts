@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import { eq, desc } from 'drizzle-orm';
 import fs from 'fs';
 import { getDb } from '../database';
-import { evals } from '../database/tables';
+import { evals } from '../database/tables/sqlite';
 import logger from '../logger';
 import telemetry from '../telemetry';
 

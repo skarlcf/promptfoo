@@ -22,7 +22,7 @@ import {
   evalsToTags,
   prompts,
   tags,
-} from '../database/tables';
+} from '../database/tables/sqlite';
 import { getEnvBool, getEnvInt } from '../envars';
 import { getDirectory, importModule } from '../esm';
 import { writeCsvToGoogleSheet } from '../googleSheets';
