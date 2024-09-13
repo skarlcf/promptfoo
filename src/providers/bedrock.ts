@@ -341,7 +341,14 @@ export const BEDROCK_MODEL = {
   CLAUDE_MESSAGES: {
     params: (config: BedrockClaudeMessagesCompletionOptions, prompt: string) => {
       const { system, extractedMessages } = parseMessages(prompt);
-      const params: any = { messages: extractedMessages };
+      const params: any = {
+        messages:
+          extractedMessages.length > 0
+            ? extractedMessages
+            : system
+              ? [{ role: 'user', content: system }]
+              : [],
+      };
       addConfigParam(
         params,
         'max_tokens',
