@@ -23,6 +23,20 @@ import { REQUEST_TIMEOUT_MS, parseChatPrompt, toTitleCase } from './shared';
 
 // see https://platform.openai.com/docs/models
 const OPENAI_CHAT_MODELS = [
+  ...['o1-preview', 'o1-preview-2024-09-12'].map((model) => ({
+    id: model,
+    cost: {
+      input: 15 / 1e6,
+      output: 60 / 1e6,
+    },
+  })),
+  ...['o1-mini', 'o1-mini-2024-09-12'].map((model) => ({
+    id: model,
+    cost: {
+      input: 3 / 1e6,
+      output: 12 / 1e6,
+    },
+  })),
   ...['gpt-4o', 'gpt-4o-2024-05-13'].map((model) => ({
     id: model,
     cost: {
@@ -116,6 +130,7 @@ interface OpenAiSharedOptions {
 
 export type OpenAiCompletionOptions = OpenAiSharedOptions & {
   temperature?: number;
+  max_completion_tokens?: number;
   max_tokens?: number;
   top_p?: number;
   frequency_penalty?: number;
@@ -463,14 +478,25 @@ export class OpenAiChatCompletionProvider extends OpenAiGenericProvider {
 
     const messages = parseChatPrompt(prompt, [{ role: 'user', content: prompt }]);
 
+    // NOTE: Special handling for o1 models which do not support max_tokens and temperature
+    const isO1Model = this.modelName.startsWith('o1-');
+    const maxCompletionTokens = isO1Model
+      ? (this.config.max_completion_tokens ?? getEnvInt('OPENAI_MAX_COMPLETION_TOKENS', 1024))
+      : undefined;
+    const maxTokens = isO1Model
+      ? undefined
+      : (this.config.max_tokens ?? getEnvInt('OPENAI_MAX_TOKENS', 1024));
+    const temperature = isO1Model
+      ? undefined
+      : (this.config.temperature ?? getEnvFloat('OPENAI_TEMPERATURE', 0));
+
     const body = {
       model: this.modelName,
       messages,
       seed: this.config.seed,
-      max_tokens:
-        this.config.max_tokens ?? Number.parseInt(process.env.OPENAI_MAX_TOKENS || '1024'),
-      temperature:
-        this.config.temperature ?? Number.parseFloat(process.env.OPENAI_TEMPERATURE || '0'),
+      ...(maxTokens ? { max_tokens: maxTokens } : {}),
+      ...(maxCompletionTokens ? { max_completion_tokens: maxCompletionTokens } : {}),
+      ...(temperature ? { temperature } : {}),
       top_p: this.config.top_p ?? Number.parseFloat(process.env.OPENAI_TOP_P || '1'),
       presence_penalty:
         this.config.presence_penalty ??
@@ -543,25 +569,33 @@ export class OpenAiChatCompletionProvider extends OpenAiGenericProvider {
       // Handle function tool callbacks
       const functionCalls = message.function_call ? [message.function_call] : message.tool_calls;
       if (functionCalls && this.config.functionToolCallbacks) {
+        const results = [];
         for (const functionCall of functionCalls) {
-          const functionName = functionCall.name;
+          const functionName = functionCall.name || functionCall.function?.name;
           if (this.config.functionToolCallbacks[functionName]) {
-            const functionResult = await this.config.functionToolCallbacks[functionName](
-              message.function_call.arguments,
-            );
-            return {
-              output: functionResult,
-              tokenUsage: getTokenUsage(data, cached),
-              cached,
-              logProbs,
-              cost: calculateCost(
-                this.modelName,
-                this.config,
-                data.usage?.prompt_tokens,
-                data.usage?.completion_tokens,
-              ),
-            };
+            try {
+              const functionResult = await this.config.functionToolCallbacks[functionName](
+                functionCall.arguments || functionCall.function?.arguments,
+              );
+              results.push(functionResult);
+            } catch (error) {
+              logger.error(`Error executing function ${functionName}: ${error}`);
+            }
           }
+        }
+        if (results.length > 0) {
+          return {
+            output: results.join('\n'),
+            tokenUsage: getTokenUsage(data, cached),
+            cached,
+            logProbs,
+            cost: calculateCost(
+              this.modelName,
+              this.config,
+              data.usage?.prompt_tokens,
+              data.usage?.completion_tokens,
+            ),
+          };
         }
       }
 

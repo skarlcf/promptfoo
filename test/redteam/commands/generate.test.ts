@@ -1,9 +1,9 @@
 import fs from 'fs';
-import { doGenerateRedteam } from '../../../src/commands/redteam/generate';
 import * as configModule from '../../../src/config';
 import logger from '../../../src/logger';
 import { synthesize } from '../../../src/redteam';
-import type { RedteamCliGenerateOptions } from '../../../src/types/redteam';
+import { doGenerateRedteam } from '../../../src/redteam/commands/generate';
+import type { RedteamCliGenerateOptions } from '../../../src/redteam/types';
 import { writePromptfooConfig } from '../../../src/util/config';
 
 jest.mock('fs');

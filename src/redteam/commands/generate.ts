@@ -6,26 +6,26 @@ import yaml from 'js-yaml';
 import path from 'path';
 import invariant from 'tiny-invariant';
 import { z } from 'zod';
+import { synthesize } from '..';
 import { disableCache } from '../../cache';
 import cliState from '../../cliState';
 import { resolveConfigs } from '../../config';
 import logger from '../../logger';
-import { synthesize } from '../../redteam';
+import telemetry from '../../telemetry';
+import type { TestSuite, UnifiedConfig } from '../../types';
+import { printBorder, setupEnv } from '../../util';
+import { writePromptfooConfig } from '../../util/config';
+import { RedteamGenerateOptionsSchema, RedteamConfigSchema } from '../../validators/redteam';
 import {
   REDTEAM_MODEL,
   DEFAULT_PLUGINS as REDTEAM_DEFAULT_PLUGINS,
   ADDITIONAL_PLUGINS as REDTEAM_ADDITIONAL_PLUGINS,
   DEFAULT_STRATEGIES,
   ADDITIONAL_STRATEGIES,
-} from '../../redteam/constants';
-import { shouldGenerateRemote } from '../../redteam/util';
-import telemetry from '../../telemetry';
-import type { TestSuite, UnifiedConfig } from '../../types';
-import type { RedteamStrategyObject, SynthesizeOptions } from '../../types/redteam';
-import type { RedteamFileConfig, RedteamCliGenerateOptions } from '../../types/redteam';
-import { printBorder, setupEnv } from '../../util';
-import { writePromptfooConfig } from '../../util/config';
-import { RedteamGenerateOptionsSchema, RedteamConfigSchema } from '../../validators/redteam';
+} from '../constants';
+import type { RedteamStrategyObject, SynthesizeOptions } from '../types';
+import type { RedteamFileConfig, RedteamCliGenerateOptions } from '../types';
+import { shouldGenerateRemote } from '../util';
 
 export async function doGenerateRedteam(options: RedteamCliGenerateOptions) {
   setupEnv(options.envFile);
@@ -263,7 +263,7 @@ export function generateRedteamCommand(
       'Specify the language for generated tests. Defaults to English',
     )
     .option('--no-cache', 'Do not read or write results to disk cache', false)
-    .option('--env-file <path>', 'Path to .env file')
+    .option('--env-file, --env-path <path>', 'Path to .env file')
     .option(
       '-j, --max-concurrency <number>',
       'Maximum number of concurrent API calls',
