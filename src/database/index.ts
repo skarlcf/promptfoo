@@ -1,17 +1,16 @@
 import Database from 'better-sqlite3';
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3';
 import { drizzle as drizzleMysql } from 'drizzle-orm/mysql2';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import mysql from 'mysql2/promise';
 import * as path from 'path';
 import { Pool } from 'pg';
 import { getConfigDirectoryPath } from '../util/config';
 
 let dbInstance:
-  | ReturnType<typeof drizzle>
-  | ReturnType<typeof drizzleMysql>
   | ReturnType<typeof drizzleSqlite>
-  | null = null;
+  | ReturnType<typeof drizzlePg>
+  | ReturnType<typeof drizzleMysql>;
 
 const DEFAULT_DB: 'postgres' | 'mysql' | 'sqlite' = (process.env.PROMPTFOO_DEFAULT_DB ||
   'sqlite') as 'postgres' | 'mysql' | 'sqlite';
@@ -28,14 +27,17 @@ export function getDbType() {
   return DEFAULT_DB;
 }
 
-export function getDb() {
+export function getDb():
+  | ReturnType<typeof drizzlePg>
+  | ReturnType<typeof drizzleMysql>
+  | ReturnType<typeof drizzleSqlite> {
   if (!dbInstance) {
     switch (DEFAULT_DB) {
       case 'postgres':
         const pool = new Pool({
           connectionString: process.env.DATABASE_URL,
         });
-        dbInstance = drizzle(pool);
+        dbInstance = drizzlePg(pool);
         break;
       case 'mysql':
         const connection = mysql.createPool({
