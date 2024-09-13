@@ -27,10 +27,10 @@ describe('checkNodeVersion', () => {
     jest.resetAllMocks();
 
     jest.mocked(path.resolve).mockImplementation(() => 'mocked/path/to/package.json');
-    jest.mocked(fs.readFileSync).mockImplementation(() =>
-      Buffer.from(JSON.stringify({
+    jest.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
         engines: { node: '>=18.0.0' },
-      }))
+      }),
     );
   });
 
@@ -70,10 +70,10 @@ describe('checkNodeVersion', () => {
 
   it('should handle version strings correctly and exit if required version is not met', () => {
     setNodeVersion('v18.0.0');
-    jest.mocked(fs.readFileSync).mockImplementation(() =>
-      Buffer.from(JSON.stringify({
+    jest.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
         engines: { node: '>=18.0.1' },
-      }))
+      }),
     );
 
     expect(checkNodeVersion()).toBeUndefined();
