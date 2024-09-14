@@ -1,8 +1,7 @@
+import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import type { Options as PythonShellOptions } from 'python-shell';
-import { PythonShell } from 'python-shell';
 import { getEnvString } from '../envars';
 import logger from '../logger';
 import { safeJsonStringify } from '../util/json';
@@ -22,17 +21,42 @@ export async function runPython(
     os.tmpdir(),
     `promptfoo-python-output-json-${Date.now()}-${Math.random().toString(16).slice(2)}.json`,
   );
-  const pythonOptions: PythonShellOptions = {
-    mode: 'text',
-    pythonPath: options.pythonExecutable || getEnvString('PROMPTFOO_PYTHON') || 'python',
-    scriptPath: __dirname,
-    args: [absPath, method, tempJsonPath, outputPath],
-  };
+  const pythonPath = options.pythonExecutable || getEnvString('PROMPTFOO_PYTHON') || 'python';
 
   try {
     await fs.writeFile(tempJsonPath, safeJsonStringify(args), 'utf-8');
     logger.debug(`Running Python wrapper with args: ${safeJsonStringify(args)}`);
-    await PythonShell.run('wrapper.py', pythonOptions);
+
+    await new Promise<void>((resolve, reject) => {
+      const pythonProcess = spawn(pythonPath, [
+        path.join(__dirname, 'wrapper.py'),
+        absPath,
+        method,
+        tempJsonPath,
+        outputPath,
+      ]);
+
+      pythonProcess.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          reject(
+            new Error(
+              `Python executable not found. Please check your Python path (${pythonPath}) or set the PROMPTFOO_PYTHON environment variable.`,
+            ),
+          );
+        } else {
+          reject(error);
+        }
+      });
+
+      pythonProcess.on('exit', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Python process exited with code ${code}`));
+        }
+      });
+    });
+
     const output = await fs.readFile(outputPath, 'utf-8');
     logger.debug(`Python script ${absPath} returned: ${output}`);
     let result: { type: 'final_result'; data: any } | undefined;
@@ -52,16 +76,10 @@ export async function runPython(
   } catch (error) {
     logger.error(
       `Error running Python script: ${(error as Error).message}\nStack Trace: ${
-        (error as Error).stack?.replace('--- Python Traceback ---', 'Python Traceback: ') ||
-        'No Python traceback available'
+        (error as Error).stack || 'No stack trace available'
       }`,
     );
-    throw new Error(
-      `Error running Python script: ${(error as Error).message}\nStack Trace: ${
-        (error as Error).stack?.replace('--- Python Traceback ---', 'Python Traceback: ') ||
-        'No Python traceback available'
-      }`,
-    );
+    throw error;
   } finally {
     await Promise.all(
       [tempJsonPath, outputPath].map((file) =>
