@@ -91,7 +91,10 @@ export interface Palm2ApiResponse {
   ];
 }
 
-export function maybeCoerceToGeminiFormat(contents: any) {
+export function maybeCoerceToGeminiFormat(contents: any): {
+  contents: any;
+  coerced: boolean;
+} {
   let coerced = false;
   if (Array.isArray(contents) && typeof contents[0].content === 'string') {
     // This looks like an OpenAI chat prompt.  Convert it to a compatible format
@@ -107,7 +110,10 @@ export function maybeCoerceToGeminiFormat(contents: any) {
 }
 
 let cachedAuth: GoogleAuth | undefined;
-export async function getGoogleClient() {
+export async function getGoogleClient(): Promise<{
+  client: GoogleAuth;
+  projectId: string;
+}> {
   if (!cachedAuth) {
     let GoogleAuth;
     try {
@@ -127,7 +133,7 @@ export async function getGoogleClient() {
   return { client, projectId };
 }
 
-export async function hasGoogleDefaultCredentials() {
+export async function hasGoogleDefaultCredentials(): Promise<boolean> {
   try {
     await getGoogleClient();
     return true;

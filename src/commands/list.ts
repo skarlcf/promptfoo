@@ -5,7 +5,7 @@ import { wrapTable } from '../table';
 import telemetry from '../telemetry';
 import { getEvals, getPrompts, getTestCases, printBorder, setupEnv, sha256 } from '../util';
 
-export function listCommand(program: Command) {
+export function listCommand(program: Command): void {
   const listCommand = program.command('list').description('List various resources');
 
   listCommand

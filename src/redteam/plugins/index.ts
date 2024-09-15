@@ -99,7 +99,7 @@ function createPluginFactory<T extends PluginConfig>(
   return {
     key,
     validate: validate as ((config: PluginConfig) => void) | undefined,
-    action: async (provider, purpose, injectVar, n, delayMs, config) => {
+    action: async (provider, purpose, injectVar, n, delayMs, config): Promise<TestCase[]> => {
       if (shouldGenerateRemote()) {
         return fetchRemoteTestCases(key, purpose, injectVar, n, config);
       }
@@ -152,7 +152,7 @@ const pluginFactories: PluginFactory[] = [
 
 const harmPlugins: PluginFactory[] = Object.keys(HARM_PLUGINS).map((category) => ({
   key: category,
-  action: async (provider, purpose, injectVar, n, delayMs) => {
+  action: async (provider, purpose, injectVar, n, delayMs): Promise<TestCase[]> => {
     if (shouldGenerateRemote()) {
       return fetchRemoteTestCases(category, purpose, injectVar, n);
     }
@@ -163,7 +163,7 @@ const harmPlugins: PluginFactory[] = Object.keys(HARM_PLUGINS).map((category) =>
 
 const piiPlugins: PluginFactory[] = PII_PLUGINS.map((category) => ({
   key: category,
-  action: async (provider, purpose, injectVar, n) => {
+  action: async (provider, purpose, injectVar, n): Promise<TestCase[]> => {
     if (shouldGenerateRemote()) {
       return fetchRemoteTestCases(category, purpose, injectVar, n);
     }

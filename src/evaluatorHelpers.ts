@@ -186,7 +186,7 @@ export async function runExtensionHook(
   extensions: string[] | undefined,
   hookName: string,
   context: any,
-) {
+): Promise<void> {
   if (!extensions || !Array.isArray(extensions) || extensions.length === 0) {
     return;
   }

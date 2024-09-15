@@ -9,7 +9,7 @@ import {
   OpenAiCompletionProvider,
 } from './openai';
 
-export function maybeEmitAzureOpenAiWarning(testSuite: TestSuite, tests: TestCase[]) {
+export function maybeEmitAzureOpenAiWarning(testSuite: TestSuite, tests: TestCase[]): boolean {
   const hasAzure = testSuite.providers.some(
     (p) =>
       p instanceof AzureOpenAiChatCompletionProvider || p instanceof AzureOpenAiCompletionProvider,

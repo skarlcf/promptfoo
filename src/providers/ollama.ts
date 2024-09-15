@@ -121,7 +121,7 @@ export class OllamaCompletionProvider implements ApiProvider {
   constructor(modelName: string, options: { id?: string; config?: OllamaCompletionOptions } = {}) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
@@ -214,7 +214,7 @@ export class OllamaChatProvider implements ApiProvider {
   constructor(modelName: string, options: { id?: string; config?: OllamaCompletionOptions } = {}) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 

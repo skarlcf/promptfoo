@@ -46,7 +46,7 @@ export function isBasicRefusal(response: string): boolean {
  * @param prefix - The prefix to remove - case insensitive.
  * @returns The string with the prefix removed.
  */
-export function removePrefix(str: string, prefix: string) {
+export function removePrefix(str: string, prefix: string): string {
   // Remove asterisks from the prefix if if they exist. GPT loves to add them. eg: **Prompt:**
   str = str.replace(/^\*\*(.+?)\*\*:?\s*/i, '$1');
   str = str.replace(new RegExp(prefix + ':', 'i'), '').trim();

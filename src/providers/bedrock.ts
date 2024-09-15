@@ -177,14 +177,17 @@ interface IBedrockModel {
   output: (responseJson: any) => any;
 }
 
-export function parseValue(value: string | number, defaultValue: any) {
+export function parseValue<T extends string | number>(value: T, defaultValue: number): number;
+export function parseValue<T>(value: T, defaultValue: T): T;
+export function parseValue<T>(value: T | string | number, defaultValue: T | number): T | number {
   if (typeof defaultValue === 'number') {
     if (typeof value === 'string') {
-      return Number.isNaN(Number.parseFloat(value)) ? defaultValue : Number.parseFloat(value);
+      const parsedValue = Number.parseFloat(value);
+      return Number.isNaN(parsedValue) ? defaultValue : parsedValue;
     }
-    return value;
+    return typeof value === 'number' ? value : defaultValue;
   }
-  return value;
+  return value as T;
 }
 
 export function addConfigParam(
@@ -193,7 +196,7 @@ export function addConfigParam(
   configValue: any,
   envValue?: string | number | undefined,
   defaultValue?: any,
-) {
+): void {
   if (configValue !== undefined || envValue !== undefined || defaultValue !== undefined) {
     params[key] =
       configValue ?? (envValue === undefined ? defaultValue : parseValue(envValue, defaultValue));
@@ -268,13 +271,13 @@ const formatPromptLlama3Instruct = (messages: LlamaMessage[]): string => {
   return formattedPrompt;
 };
 
-export const getLlamaModelHandler = (version: LlamaVersion) => {
+export const getLlamaModelHandler = (version: LlamaVersion): IBedrockModel => {
   if (version !== LlamaVersion.V2 && version !== LlamaVersion.V3) {
     throw new Error(`Unsupported LLAMA version: ${version}`);
   }
 
   return {
-    params: (config: BedrockLlamaGenerationOptions, prompt: string) => {
+    params: (config: BedrockLlamaGenerationOptions, prompt: string): any => {
       const messages = parseChatPrompt(prompt, [{ role: 'user', content: prompt }]);
 
       let finalPrompt: string;
@@ -315,7 +318,7 @@ export const getLlamaModelHandler = (version: LlamaVersion) => {
 
 export const BEDROCK_MODEL = {
   CLAUDE_COMPLETION: {
-    params: (config: BedrockClaudeLegacyCompletionOptions, prompt: string, stop: string[]) => {
+    params: (config: BedrockClaudeLegacyCompletionOptions, prompt: string, stop: string[]): any => {
       const params: any = {
         prompt: `${Anthropic.HUMAN_PROMPT} ${prompt} ${Anthropic.AI_PROMPT}`,
         stop_sequences: stop,
@@ -336,10 +339,10 @@ export const BEDROCK_MODEL = {
       );
       return params;
     },
-    output: (responseJson: any) => responseJson?.completion,
+    output: (responseJson: any): string => responseJson?.completion,
   },
   CLAUDE_MESSAGES: {
-    params: (config: BedrockClaudeMessagesCompletionOptions, prompt: string) => {
+    params: (config: BedrockClaudeMessagesCompletionOptions, prompt: string): any => {
       const { system, extractedMessages } = parseMessages(prompt);
       const params: any = { messages: extractedMessages };
       addConfigParam(
@@ -368,12 +371,12 @@ export const BEDROCK_MODEL = {
       addConfigParam(params, 'system', system, undefined, undefined);
       return params;
     },
-    output: (responseJson: any) => {
+    output: (responseJson: any): string => {
       return outputFromMessage(responseJson);
     },
   },
   TITAN_TEXT: {
-    params: (config: BedrockTextGenerationOptions, prompt: string, stop: string[]) => {
+    params: (config: BedrockTextGenerationOptions, prompt: string, stop: string[]): any => {
       const textGenerationConfig: any = {};
       addConfigParam(
         textGenerationConfig,
@@ -405,12 +408,16 @@ export const BEDROCK_MODEL = {
       );
       return { inputText: prompt, textGenerationConfig };
     },
-    output: (responseJson: any) => responseJson?.results[0]?.outputText,
+    output: (responseJson: any): string => responseJson?.results[0]?.outputText,
   },
   LLAMA2: getLlamaModelHandler(LlamaVersion.V2),
   LLAMA3: getLlamaModelHandler(LlamaVersion.V3), // Prompt format of llama3 instruct differs from llama2.
   COHERE_COMMAND: {
-    params: (config: BedrockCohereCommandGenerationOptions, prompt: string, stop: string[]) => {
+    params: (
+      config: BedrockCohereCommandGenerationOptions,
+      prompt: string,
+      stop: string[],
+    ): any => {
       const params: any = { prompt };
       addConfigParam(params, 'temperature', config?.temperature, process.env.COHERE_TEMPERATURE, 0);
       addConfigParam(params, 'p', config?.p, process.env.COHERE_P, 1);
@@ -424,10 +431,14 @@ export const BEDROCK_MODEL = {
       addConfigParam(params, 'stop_sequences', stop, undefined, undefined);
       return params;
     },
-    output: (responseJson: any) => responseJson?.generations[0]?.text,
+    output: (responseJson: any): string => responseJson?.generations[0]?.text,
   },
   COHERE_COMMAND_R: {
-    params: (config: BedrockCohereCommandRGenerationOptions, prompt: string, stop: string[]) => {
+    params: (
+      config: BedrockCohereCommandRGenerationOptions,
+      prompt: string,
+      stop: string[],
+    ): any => {
       const messages = parseChatPrompt(prompt, [{ role: 'user', content: prompt }]);
       const lastMessage = messages[messages.length - 1].content;
       if (!messages.every((m) => typeof m.content === 'string')) {
@@ -458,10 +469,10 @@ export const BEDROCK_MODEL = {
       addConfigParam(params, 'raw_prompting', config?.raw_prompting);
       return params;
     },
-    output: (responseJson: any) => responseJson?.text,
+    output: (responseJson: any): string => responseJson?.text,
   },
   MISTRAL: {
-    params: (config: BedrockMistralGenerationOptions, prompt: string, stop: string[]) => {
+    params: (config: BedrockMistralGenerationOptions, prompt: string, stop: string[]): any => {
       const params: any = { prompt, stop };
       addConfigParam(
         params,
@@ -481,7 +492,7 @@ export const BEDROCK_MODEL = {
       addConfigParam(params, 'top_k', config?.top_k, process.env.MISTRAL_TOP_K, 0);
       return params;
     },
-    output: (responseJson: any) => responseJson?.outputs[0]?.text,
+    output: (responseJson: any): string => responseJson?.outputs[0]?.text,
   },
 };
 
@@ -512,7 +523,7 @@ const AWS_BEDROCK_MODELS: Record<string, IBedrockModel> = {
 };
 
 // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html
-function getHandlerForModel(modelName: string) {
+function getHandlerForModel(modelName: string): IBedrockModel {
   const ret = AWS_BEDROCK_MODELS[modelName];
   if (ret) {
     return ret;
@@ -552,7 +563,7 @@ export abstract class AwsBedrockGenericProvider {
     this.env = env;
     this.modelName = modelName;
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {
@@ -563,7 +574,7 @@ export abstract class AwsBedrockGenericProvider {
     return `[Amazon Bedrock Provider ${this.modelName}]`;
   }
 
-  async getBedrockInstance() {
+  async getBedrockInstance(): Promise<BedrockRuntime> {
     if (!this.bedrock) {
       let handler;
       // set from https://www.npmjs.com/package/proxy-agent

@@ -85,7 +85,7 @@ export class AI21ChatCompletionProvider implements ApiProvider {
     const { id, config, env } = options;
     this.env = env;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 

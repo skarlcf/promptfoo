@@ -28,13 +28,14 @@ export const useReportStore = create<ReportState>()(
   persist(
     (set) => ({
       showPercentagesOnRiskCards: false,
-      setShowPercentagesOnRiskCards: (show: boolean) =>
+      setShowPercentagesOnRiskCards: (show: boolean): void =>
         set(() => ({ showPercentagesOnRiskCards: show })),
       pluginPassRateThreshold: 1.0,
-      setPluginPassRateThreshold: (threshold: number) =>
+      setPluginPassRateThreshold: (threshold: number): void =>
         set(() => ({ pluginPassRateThreshold: threshold })),
       showComplianceSection: false,
-      setShowComplianceSection: (show: boolean) => set(() => ({ showComplianceSection: show })),
+      setShowComplianceSection: (show: boolean): void =>
+        set(() => ({ showComplianceSection: show })),
     }),
     {
       name: 'ReportViewStorage',

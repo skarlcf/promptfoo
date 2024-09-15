@@ -10,7 +10,7 @@ export class WebhookProvider implements ApiProvider {
   constructor(webhookUrl: string, options: { id?: string; config?: object } = {}) {
     const { id, config } = options;
     this.webhookUrl = webhookUrl;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config;
   }
 

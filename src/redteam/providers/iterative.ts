@@ -36,7 +36,7 @@ async function runRedteamConversation({
   redteamProvider: ApiProvider;
   targetProvider: ApiProvider;
   injectVar: string;
-}) {
+}): Promise<{ output: string; metadata: Record<string, string | object | undefined> }> {
   const nunjucks = getNunjucksEngine();
   const goal = vars[injectVar];
 
@@ -199,7 +199,7 @@ class RedteamIterativeProvider implements ApiProvider {
     }
   }
 
-  id() {
+  id(): string {
     return 'promptfoo:redteam:iterative';
   }
 
@@ -210,7 +210,11 @@ class RedteamIterativeProvider implements ApiProvider {
    * @param options
    * @returns
    */
-  async callApi(prompt: string, context?: CallApiContextParams, options?: CallApiOptionsParams) {
+  async callApi(
+    prompt: string,
+    context?: CallApiContextParams,
+    options?: CallApiOptionsParams,
+  ): Promise<{ output: string; metadata: Record<string, string | object> }> {
     invariant(context?.originalProvider, 'Expected originalProvider to be set');
     invariant(context.vars, 'Expected vars to be set');
 

@@ -78,7 +78,7 @@ abstract class CloudflareAiGenericProvider implements ApiProvider {
     this.deploymentName = deploymentName;
 
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   getApiConfig(): { accountId: string; apiToken: string } {
@@ -132,7 +132,7 @@ abstract class CloudflareAiGenericProvider implements ApiProvider {
   /**
    * @see https://developers.cloudflare.com/api/operations/workers-ai-post-run-model
    */
-  buildUrl() {
+  buildUrl(): string {
     return `${this.getApiBaseUrl()}/ai/run/${this.deploymentName}`;
   }
 

@@ -3,14 +3,18 @@ import Table from 'cli-table3';
 import { TERMINAL_MAX_WIDTH } from './constants';
 import type { EvaluateSummary } from './types';
 
-function ellipsize(str: string, maxLen: number) {
+function ellipsize(str: string, maxLen: number): string {
   if (str.length > maxLen) {
     return str.slice(0, maxLen - 3) + '...';
   }
   return str;
 }
 
-export function generateTable(summary: EvaluateSummary, tableCellMaxLength = 250, maxRows = 25) {
+export function generateTable(
+  summary: EvaluateSummary,
+  tableCellMaxLength = 250,
+  maxRows = 25,
+): Table.Table {
   const head = summary.table.head;
   const headLength = head.prompts.length + head.vars.length;
   const table = new Table({
@@ -50,7 +54,9 @@ export function generateTable(summary: EvaluateSummary, tableCellMaxLength = 250
   return table;
 }
 
-export function wrapTable(rows: Record<string, string | number>[]) {
+export function wrapTable(
+  rows: Record<string, string | number>[],
+): Table.Table | 'No data to display' {
   if (rows.length === 0) {
     return 'No data to display';
   }

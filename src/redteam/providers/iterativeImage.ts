@@ -93,7 +93,7 @@ async function runRedteamConversation({
   redteamProvider: ApiProvider;
   targetProvider: ApiProvider;
   injectVar: string;
-}) {
+}): Promise<{ output: string; metadata: Record<string, string | object> }> {
   // Assume redteam provider is also a vision model
   const visionProvider = redteamProvider;
   const nunjucks = getNunjucksEngine();
@@ -252,11 +252,15 @@ class RedteamIterativeProvider implements ApiProvider {
     this.redteamProvider = config.redteamProvider;
   }
 
-  id() {
+  id(): string {
     return 'promptfoo:redteam:iterative:image';
   }
 
-  async callApi(prompt: string, context?: CallApiContextParams, options?: CallApiOptionsParams) {
+  async callApi(
+    prompt: string,
+    context?: CallApiContextParams,
+    options?: CallApiOptionsParams,
+  ): Promise<{ output: string; metadata: Record<string, string | object> }> {
     invariant(context?.originalProvider, 'Expected originalProvider to be set');
     invariant(context.vars, 'Expected vars to be set');
 

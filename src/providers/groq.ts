@@ -50,7 +50,7 @@ export class GroqProvider implements ApiProvider {
     });
   }
 
-  id = () => `groq:${this.modelName}`;
+  id = (): string => `groq:${this.modelName}`;
 
   public getModelName(): string {
     return this.modelName;

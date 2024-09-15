@@ -32,11 +32,11 @@ const logger = winston.createLogger({
   ],
 });
 
-export function getLogLevel() {
+export function getLogLevel(): string | undefined {
   return logger.transports[0].level;
 }
 
-export function setLogLevel(level: keyof typeof LOG_LEVELS) {
+export function setLogLevel(level: keyof typeof LOG_LEVELS): void {
   if (level in LOG_LEVELS) {
     logger.transports[0].level = level;
   } else {

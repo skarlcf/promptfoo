@@ -122,7 +122,7 @@ def call_api(prompt, options, context):
     }
 `;
 
-function recordOnboardingStep(step: string, properties: Record<string, EventValue> = {}) {
+function recordOnboardingStep(step: string, properties: Record<string, EventValue> = {}): void {
   telemetry.recordAndSend('funnel', {
     type: 'redteam onboarding',
     step,
@@ -163,7 +163,7 @@ async function getSystemPrompt(numVariablesRequired: number = 1): Promise<string
   return prompt;
 }
 
-export async function redteamInit(directory: string | undefined) {
+export async function redteamInit(directory: string | undefined): Promise<void> {
   telemetry.record('command_used', { name: 'redteam init - started' });
   recordOnboardingStep('start');
 
@@ -584,7 +584,7 @@ export async function redteamInit(directory: string | undefined) {
   }
 }
 
-export function initCommand(program: Command) {
+export function initCommand(program: Command): void {
   program
     .command('init [directory]')
     .description('Initialize red teaming project')

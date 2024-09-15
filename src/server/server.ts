@@ -55,7 +55,7 @@ export function startServer(
   port = 15500,
   browserBehavior = BrowserBehavior.ASK,
   filterDescription?: string,
-) {
+): void {
   const app = express();
 
   const staticDir = path.join(getDirectory(), 'web', 'nextui');
@@ -252,7 +252,7 @@ export function startServer(
       const url = `http://localhost:${port}`;
       logger.info(`Server running at ${url} and monitoring for new evals.`);
 
-      const openUrl = async () => {
+      const openUrl = async (): Promise<void> => {
         try {
           logger.info('Press Ctrl+C to stop the server');
           await opener(url);

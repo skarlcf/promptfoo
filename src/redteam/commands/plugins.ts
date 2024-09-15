@@ -3,7 +3,7 @@ import type { Command } from 'commander';
 import logger from '../../logger';
 import { ALL_PLUGINS, DEFAULT_PLUGINS, subCategoryDescriptions } from '../constants';
 
-export function pluginsCommand(program: Command) {
+export function pluginsCommand(program: Command): void {
   program
     .command('plugins')
     .description('List all available plugins')

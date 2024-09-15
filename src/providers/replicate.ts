@@ -58,7 +58,7 @@ export class ReplicateProvider implements ApiProvider {
       getEnvString('REPLICATE_API_TOKEN') ||
       getEnvString('REPLICATE_API_KEY');
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {
@@ -240,7 +240,7 @@ export class ReplicateModerationProvider
         throw new Error('API response error: no output');
       }
       const [safeString, codes] = output.split('\n');
-      const saveCache = async () => {
+      const saveCache = async (): Promise<void> => {
         if (cache && cacheKey) {
           await cache.set(cacheKey, JSON.stringify(output));
         }

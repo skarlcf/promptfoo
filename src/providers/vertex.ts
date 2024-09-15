@@ -495,7 +495,7 @@ export class VertexEmbeddingProvider implements ApiEmbeddingProvider {
     this.env = env;
   }
 
-  id() {
+  id(): string {
     return `vertex:${this.modelName}`;
   }
 

@@ -5,7 +5,7 @@ import { evals } from '../database/tables';
 import logger from '../logger';
 import telemetry from '../telemetry';
 
-export function importCommand(program: Command) {
+export function importCommand(program: Command): void {
   program
     .command('import <file>')
     .description('Import an eval record from a JSON file')

@@ -38,7 +38,7 @@ import { getNunjucksEngine } from './util/templates';
 
 const nunjucks = getNunjucksEngine(undefined, false, true);
 
-function cosineSimilarity(vecA: number[], vecB: number[]) {
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
   if (vecA.length !== vecB.length) {
     throw new Error('Vectors must be of equal length');
   }
@@ -48,7 +48,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]) {
   return dotProduct / (vecAMagnitude * vecBMagnitude);
 }
 
-function fromVars(vars?: Record<string, string | object>) {
+function fromVars(vars?: Record<string, string | object>): Record<string, string> {
   if (!vars) {
     return {};
   }
@@ -65,7 +65,7 @@ function fromVars(vars?: Record<string, string | object>) {
   return ret;
 }
 
-async function loadFromProviderOptions(provider: ProviderOptions) {
+async function loadFromProviderOptions(provider: ProviderOptions): Promise<ApiProvider> {
   invariant(
     typeof provider === 'object',
     `Provider must be an object, but received a ${typeof provider}: ${provider}`,
@@ -368,7 +368,7 @@ export function renderLlmRubricPrompt(
   llmOutput: string,
   grading?: GradingConfig,
   vars?: Record<string, string | object>,
-) {
+): string {
   const rubricPrompt = grading?.rubricPrompt || DEFAULT_GRADING_PROMPT;
   invariant(typeof rubricPrompt === 'string', 'rubricPrompt must be a string');
   return nunjucks.renderString(rubricPrompt, {
@@ -954,7 +954,7 @@ interface ModerationMatchOptions {
 export async function matchesModeration(
   { userPrompt, assistantResponse, categories = [] }: ModerationMatchOptions,
   grading?: GradingConfig,
-) {
+): Promise<Omit<GradingResult, 'assertion'>> {
   const moderationProvider = (await getAndCheckProvider(
     'moderation',
     grading?.provider,

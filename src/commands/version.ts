@@ -4,7 +4,7 @@ import path from 'path';
 import { getDirectory } from '../esm';
 import logger from '../logger';
 
-export function versionCommand(program: Command) {
+export function versionCommand(program: Command): void {
   program.option('--version', 'Print version', () => {
     const packageJson = JSON.parse(
       fs.readFileSync(path.join(getDirectory(), '../package.json'), 'utf8'),

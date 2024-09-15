@@ -35,7 +35,9 @@ export async function dereferenceConfig(rawConfig: UnifiedConfig): Promise<Unifi
   // https://github.com/promptfoo/promptfoo/issues/364
 
   // Remove parameters from functions and tools to prevent dereferencing
-  const extractFunctionParameters = (functions: { parameters?: object }[]) => {
+  const extractFunctionParameters = (
+    functions: { parameters?: object }[],
+  ): { parameters?: object }[] => {
     return functions.map((func) => {
       const { parameters } = func;
       delete func.parameters;
@@ -43,7 +45,9 @@ export async function dereferenceConfig(rawConfig: UnifiedConfig): Promise<Unifi
     });
   };
 
-  const extractToolParameters = (tools: { function?: { parameters?: object } }[]) => {
+  const extractToolParameters = (
+    tools: { function?: { parameters?: object } }[],
+  ): { parameters?: object }[] => {
     return tools.map((tool) => {
       const { parameters } = tool.function || {};
       if (tool.function?.parameters) {
@@ -57,7 +61,7 @@ export async function dereferenceConfig(rawConfig: UnifiedConfig): Promise<Unifi
   const restoreFunctionParameters = (
     functions: { parameters?: object }[],
     parametersList: { parameters?: object }[],
-  ) => {
+  ): void => {
     functions.forEach((func, index) => {
       if (parametersList[index]?.parameters) {
         func.parameters = parametersList[index].parameters;
@@ -68,7 +72,7 @@ export async function dereferenceConfig(rawConfig: UnifiedConfig): Promise<Unifi
   const restoreToolParameters = (
     tools: { function?: { parameters?: object } }[],
     parametersList: { parameters?: object }[],
-  ) => {
+  ): void => {
     tools.forEach((tool, index) => {
       if (parametersList[index]?.parameters) {
         tool.function = tool.function || {};

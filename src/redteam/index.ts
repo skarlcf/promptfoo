@@ -225,7 +225,7 @@ export async function synthesize({
   const expandPlugin = (
     plugin: (typeof plugins)[0],
     mapping: { plugins: string[]; strategies: string[] },
-  ) => {
+  ): void => {
     mapping.plugins.forEach((p: string) =>
       expandedPlugins.push({ id: p, numTests: plugin.numTests }),
     );

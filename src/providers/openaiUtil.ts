@@ -18,7 +18,7 @@ export function validateFunctionCall(
   functionCall: { arguments: string; name: string },
   functions?: OpenAiFunction[],
   vars?: Record<string, string | object>,
-) {
+): void {
   // Parse function call and validate it against schema
   const interpolatedFunctions = maybeLoadFromExternalFile(
     renderVarsInObject(functions, vars),

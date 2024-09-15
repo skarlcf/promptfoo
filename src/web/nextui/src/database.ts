@@ -37,7 +37,7 @@ export async function updateJob(
   id: string,
   progress: number,
   total: number,
-) {
+): Promise<void> {
   const { error } = await supabase
     .from('EvaluationJob')
     .update({

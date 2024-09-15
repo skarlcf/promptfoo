@@ -9,12 +9,12 @@ import telemetry from '../telemetry';
 import type { ResultsFile } from '../types';
 import { getLatestEval, readResult, setupEnv } from '../util';
 
-async function createPublicUrl(results: ResultsFile, showAuth: boolean) {
+async function createPublicUrl(results: ResultsFile, showAuth: boolean): Promise<void> {
   const url = await createShareableUrl(results.results, results.config, showAuth);
   logger.info(`View results: ${chalk.greenBright.bold(url)}`);
 }
 
-export function shareCommand(program: Command) {
+export function shareCommand(program: Command): void {
   program
     .command('share [evalId]')
     .description('Create a shareable URL of an eval (defaults to most recent)')

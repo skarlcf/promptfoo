@@ -47,7 +47,7 @@ export async function loadDefaultConfig(): Promise<{
   return { defaultConfig, defaultConfigPath };
 }
 
-async function main() {
+async function main(): Promise<void> {
   await checkForUpdates();
   await runDbMigrations();
 

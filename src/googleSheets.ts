@@ -1,7 +1,7 @@
 import logger from './logger';
 import type { CsvRow } from './types';
 
-async function checkGoogleSheetAccess(url: string) {
+async function checkGoogleSheetAccess(url: string): Promise<{ public: boolean; status: number }> {
   try {
     const response = await fetch(url);
     if (response.ok) {

@@ -4,7 +4,7 @@ import logger from '../logger';
 import { initializeProject } from '../onboarding';
 import telemetry from '../telemetry';
 
-export function initCommand(program: Command) {
+export function initCommand(program: Command): void {
   program
     .command('init [directory]')
     .description('Initialize project with dummy files')

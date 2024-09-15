@@ -54,7 +54,7 @@ export class HuggingfaceTextGenerationProvider implements ApiProvider {
   ) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
@@ -70,7 +70,9 @@ export class HuggingfaceTextGenerationProvider implements ApiProvider {
     return this.config.apiKey || getEnvString('HF_API_TOKEN');
   }
 
-  getConfig() {
+  getConfig(): Partial<
+    Record<keyof HuggingfaceTextGenerationOptions, number | boolean | string | undefined>
+  > {
     return Object.keys(this.config).reduce(
       (options, key) => {
         const optionName = key as keyof HuggingfaceTextGenerationOptions;
@@ -151,7 +153,7 @@ export class HuggingfaceTextClassificationProvider implements ApiProvider {
   ) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
@@ -241,7 +243,7 @@ export class HuggingfaceFeatureExtractionProvider implements ApiProvider {
   ) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
@@ -327,7 +329,7 @@ export class HuggingfaceSentenceSimilarityProvider implements ApiSimilarityProvi
   ) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
@@ -416,7 +418,7 @@ export class HuggingfaceTokenExtractionProvider implements ApiProvider {
   ) {
     const { id, config } = options;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 

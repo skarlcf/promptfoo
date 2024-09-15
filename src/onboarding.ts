@@ -232,7 +232,7 @@ promptfoo eval
 Afterwards, you can view the results by running \`promptfoo view\`
 `;
 
-function recordOnboardingStep(step: string, properties: Record<string, EventValue> = {}) {
+function recordOnboardingStep(step: string, properties: Record<string, EventValue> = {}): void {
   telemetry.recordAndSend('funnel', {
     type: 'eval onboarding',
     step,
@@ -262,7 +262,10 @@ export function reportProviderAPIKeyWarnings(providerChoices: (string | object)[
     );
 }
 
-export async function createDummyFiles(directory: string | null, interactive: boolean = true) {
+export async function createDummyFiles(
+  directory: string | null,
+  interactive: boolean = true,
+): Promise<void> {
   console.clear();
 
   if (directory && !fs.existsSync(directory)) {
@@ -558,7 +561,10 @@ export async function createDummyFiles(directory: string | null, interactive: bo
   };
 }
 
-export async function initializeProject(directory: string | null, interactive: boolean = true) {
+export async function initializeProject(
+  directory: string | null,
+  interactive: boolean = true,
+): Promise<void> {
   try {
     return await createDummyFiles(directory, interactive);
   } catch (err) {

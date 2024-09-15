@@ -15,7 +15,7 @@ export class VoyageEmbeddingProvider implements ApiEmbeddingProvider {
     this.env = env;
   }
 
-  id() {
+  id(): string {
     return `voyage:${this.modelName}`;
   }
 

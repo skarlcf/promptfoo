@@ -185,7 +185,7 @@ export function getEnvFloat(key: EnvVarKey, defaultValue?: number): number | und
   return defaultValue;
 }
 
-export function isCI() {
+export function isCI(): boolean {
   return (
     getEnvBool('CI') ||
     getEnvBool('GITHUB_ACTIONS') ||

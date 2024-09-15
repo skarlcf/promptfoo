@@ -2,7 +2,7 @@ import readline from 'readline';
 import { fetchWithProxy } from './fetch';
 import logger from './logger';
 
-export async function sendFeedback(feedback: string) {
+export async function sendFeedback(feedback: string): Promise<void> {
   const resp = await fetchWithProxy('https://api.promptfoo.dev/api/feedback', {
     method: 'POST',
     headers: {
@@ -22,9 +22,9 @@ export async function sendFeedback(feedback: string) {
   }
 }
 
-export function gatherFeedback(message?: string) {
+export async function gatherFeedback(message?: string): Promise<void> {
   if (message) {
-    sendFeedback(message);
+    await sendFeedback(message);
   } else {
     const reader = readline.createInterface({
       input: process.stdin,

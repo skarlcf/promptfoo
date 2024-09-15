@@ -32,7 +32,7 @@ class PalmGenericProvider implements ApiProvider {
     this.env = env;
     this.modelName = modelName;
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {

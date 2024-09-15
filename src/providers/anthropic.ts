@@ -90,7 +90,7 @@ function getTokenUsage(data: any, cached: boolean): Partial<TokenUsage> {
   return {};
 }
 
-export function outputFromMessage(message: Anthropic.Messages.Message) {
+export function outputFromMessage(message: Anthropic.Messages.Message): string {
   const hasToolUse = message.content.some((block) => block.type === 'tool_use');
   if (hasToolUse) {
     return message.content
@@ -122,7 +122,7 @@ export function parseMessages(messages: string): {
   let currentRole: 'user' | 'assistant' | null = null;
   let currentContent: string[] = [];
 
-  const pushMessage = () => {
+  const pushMessage = (): void => {
     if (currentRole && currentContent.length > 0) {
       extractedMessages.push({
         role: currentRole,
@@ -201,7 +201,7 @@ export class AnthropicMessagesProvider implements ApiProvider {
     const { id, config, env } = options;
     this.env = env;
     this.modelName = modelName;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
     this.apiKey = config?.apiKey || env?.ANTHROPIC_API_KEY || getEnvString('ANTHROPIC_API_KEY');
     this.anthropic = new Anthropic({ apiKey: this.apiKey, baseURL: this.config.apiBaseUrl });
@@ -333,7 +333,7 @@ export class AnthropicCompletionProvider implements ApiProvider {
     this.apiKey = config?.apiKey || env?.ANTHROPIC_API_KEY || getEnvString('ANTHROPIC_API_KEY');
     this.anthropic = new Anthropic({ apiKey: this.apiKey });
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {

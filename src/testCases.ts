@@ -160,7 +160,7 @@ export async function readTests(
 ): Promise<TestCase[]> {
   const ret: TestCase[] = [];
 
-  const loadTestsFromGlob = async (loadTestsGlob: string) => {
+  const loadTestsFromGlob = async (loadTestsGlob: string): Promise<TestCase[]> => {
     if (loadTestsGlob.startsWith('file://')) {
       loadTestsGlob = loadTestsGlob.slice('file://'.length);
     }
@@ -168,7 +168,7 @@ export async function readTests(
     const testFiles = globSync(resolvedPath, {
       windowsPathsNoEscape: true,
     });
-    const _deref = async (testCases: TestCase[], file: string) => {
+    const _deref = async (testCases: TestCase[], file: string): Promise<TestCase[]> => {
       logger.debug(`Dereferencing test file: ${file}`);
       return (await $RefParser.dereference(testCases)) as TestCase[];
     };
@@ -333,7 +333,7 @@ export async function synthesize({
   numPersonas,
   numTestCasesPerPersona,
   provider,
-}: SynthesizeOptions) {
+}: SynthesizeOptions): Promise<VarMapping[]> {
   if (prompts.length < 1) {
     throw new Error('Dataset synthesis requires at least one prompt.');
   }
@@ -453,7 +453,7 @@ export async function synthesize({
 export async function synthesizeFromTestSuite(
   testSuite: TestSuite,
   options: Partial<SynthesizeOptions>,
-) {
+): Promise<VarMapping[]> {
   return synthesize({
     ...options,
     prompts: testSuite.prompts.map((prompt) => prompt.raw),

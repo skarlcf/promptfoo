@@ -11,7 +11,7 @@ import {
   setupEnv,
 } from '../util';
 
-async function handlePrompt(id: string) {
+async function handlePrompt(id: string): Promise<void> {
   telemetry.record('command_used', {
     name: 'show prompt',
   });
@@ -58,7 +58,7 @@ async function handlePrompt(id: string) {
   );
 }
 
-async function handleEval(id: string) {
+async function handleEval(id: string): Promise<void> {
   telemetry.record('command_used', {
     name: 'show eval',
   });
@@ -89,7 +89,7 @@ async function handleEval(id: string) {
   );
 }
 
-async function handleDataset(id: string) {
+async function handleDataset(id: string): Promise<void> {
   telemetry.record('command_used', {
     name: 'show dataset',
   });
@@ -137,7 +137,7 @@ async function handleDataset(id: string) {
   );
 }
 
-export async function showCommand(program: Command) {
+export async function showCommand(program: Command): Promise<void> {
   const showCommand = program
     .command('show <id>')
     .description('Show details of a specific resource')

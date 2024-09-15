@@ -434,7 +434,9 @@ export async function loadApiProviders(
           return loadApiProvider(provider, { basePath, env });
         } else if (typeof provider === 'function') {
           return {
-            id: provider.label ? (): string => provider.label! : (): string => `custom-function-${idx}`,
+            id: provider.label
+              ? (): string => provider.label!
+              : (): string => `custom-function-${idx}`,
             callApi: provider,
           };
         } else if (provider.id) {

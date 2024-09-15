@@ -19,6 +19,7 @@ import type {
   ProviderOptions,
   PromptFunction,
   Scenario,
+  EvaluateSummary,
 } from './types';
 import {
   readFilters,
@@ -32,7 +33,10 @@ export * from './types';
 
 export { generateTable } from './table';
 
-async function evaluate(testSuite: EvaluateTestSuite, options: EvaluateOptions = {}) {
+async function evaluate(
+  testSuite: EvaluateTestSuite,
+  options: EvaluateOptions = {},
+): Promise<EvaluateSummary> {
   const constructedTestSuite: TestSuite = {
     ...testSuite,
     scenarios: testSuite.scenarios as Scenario[],

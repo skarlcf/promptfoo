@@ -27,7 +27,7 @@ import type { RedteamStrategyObject, SynthesizeOptions } from '../types';
 import type { RedteamFileConfig, RedteamCliGenerateOptions } from '../types';
 import { shouldGenerateRemote } from '../util';
 
-export async function doGenerateRedteam(options: RedteamCliGenerateOptions) {
+export async function doGenerateRedteam(options: RedteamCliGenerateOptions): Promise<void> {
   setupEnv(options.envFile);
   if (!options.cache) {
     logger.info('Cache is disabled');
@@ -209,7 +209,7 @@ export function generateRedteamCommand(
   command: 'redteam' | 'generate',
   defaultConfig: Partial<UnifiedConfig>,
   defaultConfigPath: string | undefined,
-) {
+): void {
   program
     .command(command) // generate or redteam depending on if called from redteam or generate
     .description('Generate adversarial test cases')

@@ -71,11 +71,11 @@ export class CohereChatCompletionProvider implements ApiProvider {
     if (!CohereChatCompletionProvider.COHERE_CHAT_MODELS.includes(this.modelName)) {
       logger.warn(`Using unknown Cohere chat model: ${this.modelName}`);
     }
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.config = config || {};
   }
 
-  id() {
+  id(): string {
     return `cohere:${this.modelName}`;
   }
 
@@ -189,7 +189,7 @@ export class CohereEmbeddingProvider implements ApiEmbeddingProvider {
     this.env = env;
   }
 
-  id() {
+  id(): string {
     return `cohere:${this.modelName}`;
   }
 

@@ -36,7 +36,7 @@ interface ConversationMessage {
 export class MemorySystem {
   private conversations: Map<string, ConversationMessage[]> = new Map();
 
-  addMessage(conversationId: string, message: ConversationMessage) {
+  addMessage(conversationId: string, message: ConversationMessage): void {
     if (!this.conversations.has(conversationId)) {
       this.conversations.set(conversationId, []);
     }
@@ -116,11 +116,15 @@ class CrescendoProvider implements ApiProvider {
     return this.scoringProvider;
   }
 
-  id() {
+  id(): string {
     return 'promptfoo:redteam:crescendo';
   }
 
-  async callApi(prompt: string, context?: CallApiContextParams, options?: CallApiOptionsParams) {
+  async callApi(
+    prompt: string,
+    context?: CallApiContextParams,
+    options?: CallApiOptionsParams,
+  ): Promise<{ output: string; metadata: Record<string, string | object> }> {
     invariant(context?.originalProvider, 'Expected originalProvider to be set');
     invariant(context?.vars, 'Expected vars to be set');
 
@@ -147,7 +151,7 @@ class CrescendoProvider implements ApiProvider {
     filters: NunjucksFilterMap | undefined;
     vars: Record<string, string | object>;
     provider: ApiProvider;
-  }) {
+  }): Promise<{ output: string; metadata: Record<string, string | object> }> {
     logger.debug(
       `Starting Crescendo attack with: prompt=${JSON.stringify(prompt)}, filtersPresent=${!!filters}, varsKeys=${Object.keys(vars)}, providerType=${provider.constructor.name}`,
     );
@@ -439,7 +443,12 @@ class CrescendoProvider implements ApiProvider {
     return [parsed.value, parsed.rationale];
   }
 
-  private async getEvalScore(lastResponse: string) {
+  private async getEvalScore(lastResponse: string): Promise<{
+    value: boolean;
+    description: string;
+    rationale: string;
+    metadata: number;
+  }> {
     logger.debug(`Getting eval score for response: ${lastResponse.substring(0, 100)}...`);
     const evalInput = JSON.stringify({
       conversationObjective: this.userGoal,

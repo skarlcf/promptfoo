@@ -4,7 +4,7 @@ import telemetry from '../telemetry';
 import { setupEnv } from '../util';
 import { setConfigDirectoryPath } from '../util/config';
 
-export function viewCommand(program: Command) {
+export function viewCommand(program: Command): void {
   program
     .command('view [directory]')
     .description('Start browser ui')

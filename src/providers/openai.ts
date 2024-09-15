@@ -171,7 +171,7 @@ export type OpenAiCompletionOptions = OpenAiSharedOptions & {
   >;
 };
 
-function failApiCall(err: any) {
+function failApiCall(err: any): { error: string } {
   if (err instanceof OpenAI.APIError) {
     return {
       error: `API error: ${err.type} ${err.message}`,
@@ -211,7 +211,7 @@ export class OpenAiGenericProvider implements ApiProvider {
     this.env = env;
     this.modelName = modelName;
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {

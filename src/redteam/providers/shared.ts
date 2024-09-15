@@ -1,5 +1,6 @@
 import cliState from '../../cliState';
 import logger from '../../logger';
+import type { ApiProvider } from '../../types';
 import { isProviderOptions, isApiProvider, type RedteamFileConfig } from '../../types';
 import { ATTACKER_MODEL, ATTACKER_MODEL_SMALL, TEMPERATURE } from './constants';
 
@@ -11,7 +12,7 @@ export async function loadRedteamProvider({
   provider?: RedteamFileConfig['provider'];
   jsonOnly?: boolean;
   preferSmallModel?: boolean;
-} = {}) {
+} = {}): Promise<ApiProvider> {
   // FIXME(ian): This approach only works on CLI, it doesn't work when running via node module.
   // That's ok for now because we only officially support redteams from CLI.
   let ret;

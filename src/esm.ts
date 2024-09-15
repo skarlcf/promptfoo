@@ -15,7 +15,7 @@ export function getDirectory(): string {
   return __dirname;
 }
 
-export async function importModule(modulePath: string, functionName?: string) {
+export async function importModule(modulePath: string, functionName?: string): Promise<any> {
   // This is some hacky shit. It prevents typescript from transpiling `import` to `require`, which breaks mjs imports.
   const resolvedPath = pathToFileURL(path.resolve(modulePath));
   const importedModule = await eval(`import('${resolvedPath}')`);

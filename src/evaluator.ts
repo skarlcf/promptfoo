@@ -581,7 +581,10 @@ class Evaluator {
     const results: EvaluateResult[] = [];
     let numComplete = 0;
 
-    const processEvalStep = async (evalStep: RunEvalOptions, index: number | string) => {
+    const processEvalStep = async (
+      evalStep: RunEvalOptions,
+      index: number | string,
+    ): Promise<void> => {
       if (typeof index !== 'number') {
         throw new Error('Expected index to be a number');
       }
@@ -702,7 +705,7 @@ class Evaluator {
     let multibar: MultiBar | undefined;
     let multiProgressBars: SingleBar[] = [];
     const originalProgressCallback = this.options.progressCallback;
-    this.options.progressCallback = (completed, total, index, evalStep) => {
+    this.options.progressCallback = (completed, total, index, evalStep): void => {
       if (originalProgressCallback) {
         originalProgressCallback(completed, total, index, evalStep);
       }
@@ -724,7 +727,7 @@ class Evaluator {
       }
     };
 
-    const createMultiBars = async (evalOptions: RunEvalOptions[]) => {
+    const createMultiBars = async (evalOptions: RunEvalOptions[]): Promise<void> => {
       const cliProgress = await import('cli-progress');
       multibar = new cliProgress.MultiBar(
         {
@@ -883,7 +886,7 @@ class Evaluator {
   }
 }
 
-export function evaluate(testSuite: TestSuite, options: EvaluateOptions) {
+export function evaluate(testSuite: TestSuite, options: EvaluateOptions): Promise<EvaluateSummary> {
   const ev = new Evaluator(testSuite, options);
   return ev.evaluate();
 }

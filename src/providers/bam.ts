@@ -113,7 +113,7 @@ export class BAMChatProvider implements ApiProvider {
     this.modelName = modelName;
     this.config = config;
     this.moderations = moderations;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
     this.apiKey = getEnvString('BAM_API_KEY');
   }
 
@@ -137,7 +137,7 @@ export class BAMChatProvider implements ApiProvider {
     );
   }
 
-  async getClient() {
+  async getClient(): Promise<GenAIClient> {
     if (!this.client) {
       const { Client } = await import('@ibm-generative-ai/node-sdk');
       this.client = new Client({

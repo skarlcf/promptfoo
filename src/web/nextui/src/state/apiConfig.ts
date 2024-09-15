@@ -12,9 +12,10 @@ const useApiConfig = create<ApiConfig>()(
   persist(
     (set) => ({
       apiBaseUrl: process.env.NEXT_PUBLIC_PROMPTFOO_REMOTE_API_BASE_URL,
-      setApiBaseUrl: (apiBaseUrl: string) => set({ apiBaseUrl }),
+      setApiBaseUrl: (apiBaseUrl: string): void => set({ apiBaseUrl }),
       fetchingPromise: null,
-      setFetchingPromise: (fetchingPromise: Promise<Response> | null) => set({ fetchingPromise }),
+      setFetchingPromise: (fetchingPromise: Promise<Response> | null): void =>
+        set({ fetchingPromise }),
     }),
     {
       name: 'api-config-storage',

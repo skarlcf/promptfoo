@@ -79,7 +79,7 @@ export async function getPrompt(
     majorVersion?: number,
     minorVersion?: number,
     variables?: Record<string, any>,
-  ) => {
+  ): Promise<Result<PromptVersionCompiled, any>> => {
     const res = await fetch(`https://api.helicone.ai/v1/prompt/${id}/compile`, {
       headers: {
         Authorization: `Bearer ${heliconeApiKey}`,

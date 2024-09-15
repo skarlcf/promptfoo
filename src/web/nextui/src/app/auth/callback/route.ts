@@ -18,6 +18,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.redirect(requestUrl.origin);
 }
 */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ hello: 'world' });
 }

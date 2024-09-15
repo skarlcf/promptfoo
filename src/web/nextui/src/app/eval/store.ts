@@ -61,37 +61,37 @@ export const useStore = create<TableState>()(
   persist(
     (set, get) => ({
       evalId: null,
-      setEvalId: (evalId: string) => set(() => ({ evalId })),
+      setEvalId: (evalId: string): void => set(() => ({ evalId })),
 
       author: null,
-      setAuthor: (author: string | null) => set(() => ({ author })),
+      setAuthor: (author: string | null): void => set(() => ({ author })),
 
       table: null,
-      setTable: (table: EvaluateTable | null) => set(() => ({ table })),
+      setTable: (table: EvaluateTable | null): void => set(() => ({ table })),
       config: null,
-      setConfig: (config: Partial<UnifiedConfig> | null) => set(() => ({ config })),
+      setConfig: (config: Partial<UnifiedConfig> | null): void => set(() => ({ config })),
 
       maxTextLength: 250,
-      setMaxTextLength: (maxTextLength: number) => set(() => ({ maxTextLength })),
+      setMaxTextLength: (maxTextLength: number): void => set(() => ({ maxTextLength })),
       wordBreak: 'break-word',
-      setWordBreak: (wordBreak: 'break-word' | 'break-all') => set(() => ({ wordBreak })),
+      setWordBreak: (wordBreak: 'break-word' | 'break-all'): void => set(() => ({ wordBreak })),
       showInferenceDetails: true,
-      setShowInferenceDetails: (showInferenceDetails: boolean) =>
+      setShowInferenceDetails: (showInferenceDetails: boolean): void =>
         set(() => ({ showInferenceDetails })),
       renderMarkdown: false,
-      setRenderMarkdown: (renderMarkdown: boolean) => set(() => ({ renderMarkdown })),
+      setRenderMarkdown: (renderMarkdown: boolean): void => set(() => ({ renderMarkdown })),
       prettifyJson: false,
-      setPrettifyJson: (prettifyJson: boolean) => set(() => ({ prettifyJson })),
+      setPrettifyJson: (prettifyJson: boolean): void => set(() => ({ prettifyJson })),
       showPrompts: false,
-      setShowPrompts: (showPrompts: boolean) => set(() => ({ showPrompts })),
+      setShowPrompts: (showPrompts: boolean): void => set(() => ({ showPrompts })),
       showPassFail: true,
-      setShowPassFail: (showPassFail: boolean) => set(() => ({ showPassFail })),
+      setShowPassFail: (showPassFail: boolean): void => set(() => ({ showPassFail })),
 
       inComparisonMode: false,
-      setInComparisonMode: (inComparisonMode: boolean) => set(() => ({ inComparisonMode })),
+      setInComparisonMode: (inComparisonMode: boolean): void => set(() => ({ inComparisonMode })),
 
       columnStates: {},
-      setColumnState: (evalId: string, state: ColumnState) =>
+      setColumnState: (evalId: string, state: ColumnState): void =>
         set((prevState) => ({
           columnStates: {
             ...prevState.columnStates,

@@ -5,15 +5,15 @@ import { getConfigDirectoryPath } from '../util/config';
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-export function getDbPath() {
+export function getDbPath(): string {
   return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'promptfoo.db');
 }
 
-export function getDbSignalPath() {
+export function getDbSignalPath(): string {
   return path.resolve(getConfigDirectoryPath(true /* createIfNotExists */), 'evalLastWritten');
 }
 
-export function getDb() {
+export function getDb(): ReturnType<typeof drizzle> {
   if (!dbInstance) {
     const sqlite = new Database(getDbPath());
     dbInstance = drizzle(sqlite);

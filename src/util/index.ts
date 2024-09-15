@@ -64,7 +64,7 @@ export function isJavascriptFile(filePath: string): boolean {
   return /\.(js|cjs|mjs|ts|cts|mts)$/.test(filePath);
 }
 
-const outputToSimpleString = (output: EvaluateTableOutput) => {
+const outputToSimpleString = (output: EvaluateTableOutput): string => {
   const passFailText = output.pass ? '[PASS]' : '[FAIL]';
   const namedScoresText = Object.entries(output.namedScores)
     .map(([name, value]) => `${name}: ${value?.toFixed(2)}`)
@@ -162,7 +162,7 @@ export async function writeMultipleOutputs(
   results: EvaluateSummary,
   config: Partial<UnifiedConfig>,
   shareableUrl: string | null,
-) {
+): Promise<void> {
   await Promise.all(
     outputPaths.map((outputPath) => writeOutput(outputPath, evalId, results, config, shareableUrl)),
   );
@@ -411,7 +411,7 @@ export function listPreviousResults_fileSystem(): { fileName: string; descriptio
   });
 }
 
-export function filenameToDate(filename: string) {
+export function filenameToDate(filename: string): Date {
   const dateString = filename.slice('eval-'.length, filename.length - '.json'.length);
 
   // Replace hyphens with colons where necessary (Windows compatibility).
@@ -434,7 +434,7 @@ export function filenameToDate(filename: string) {
   */
 }
 
-export function dateToFilename(date: Date) {
+export function dateToFilename(date: Date): string {
   return `eval-${date.toISOString().replace(/:/g, '-')}.json`;
 }
 
@@ -463,7 +463,7 @@ export function readResult_fileSystem(
 
 let attemptedMigration = false;
 
-export async function migrateResultsFromFileSystemToDatabase() {
+export async function migrateResultsFromFileSystemToDatabase(): Promise<void> {
   if (attemptedMigration) {
     // TODO(ian): Record this bit in the database.
     return;
@@ -525,7 +525,7 @@ export async function migrateResultsFromFileSystemToDatabase() {
 
 const RESULT_HISTORY_LENGTH = getEnvInt('RESULT_HISTORY_LENGTH', DEFAULT_QUERY_LIMIT);
 
-export function cleanupOldFileResults(remaining = RESULT_HISTORY_LENGTH) {
+export function cleanupOldFileResults(remaining = RESULT_HISTORY_LENGTH): void {
   const sortedFilenames = listPreviousResultFilenames_fileSystem();
   for (let i = 0; i < sortedFilenames.length - remaining; i++) {
     fs.unlinkSync(path.join(getConfigDirectoryPath(), 'output', sortedFilenames[i]));
@@ -729,7 +729,7 @@ export async function getPromptsWithPredicate(
 export function getPromptsForTestCasesHash(
   testCasesSha256: string,
   limit: number = DEFAULT_QUERY_LIMIT,
-) {
+): Promise<PromptWithMetadata[]> {
   return getPromptsWithPredicate((result) => {
     const testsJson = JSON.stringify(result.config.tests);
     const hash = sha256(testsJson);
@@ -737,7 +737,7 @@ export function getPromptsForTestCasesHash(
   }, limit);
 }
 
-export function getPromptsForTestCases(testCases: TestCase[]) {
+export function getPromptsForTestCases(testCases: TestCase[]): Promise<PromptWithMetadata[]> {
   const testCasesJson = JSON.stringify(testCases);
   const testCasesSha256 = sha256(testCasesJson);
   return getPromptsForTestCasesHash(testCasesSha256);
@@ -819,15 +819,17 @@ export async function getTestCasesWithPredicate(
   return Object.values(groupedTestCases);
 }
 
-export function getPrompts(limit: number = DEFAULT_QUERY_LIMIT) {
+export function getPrompts(limit: number = DEFAULT_QUERY_LIMIT): Promise<PromptWithMetadata[]> {
   return getPromptsWithPredicate(() => true, limit);
 }
 
-export async function getTestCases(limit: number = DEFAULT_QUERY_LIMIT) {
+export async function getTestCases(
+  limit: number = DEFAULT_QUERY_LIMIT,
+): Promise<TestCasesWithMetadata[]> {
   return getTestCasesWithPredicate(() => true, limit);
 }
 
-export async function getPromptFromHash(hash: string) {
+export async function getPromptFromHash(hash: string): Promise<PromptWithMetadata | undefined> {
   const prompts = await getPrompts();
   for (const prompt of prompts) {
     if (prompt.id.startsWith(hash)) {
@@ -837,7 +839,7 @@ export async function getPromptFromHash(hash: string) {
   return undefined;
 }
 
-export async function getDatasetFromHash(hash: string) {
+export async function getDatasetFromHash(hash: string): Promise<TestCasesWithMetadata | undefined> {
   const datasets = await getTestCases();
   for (const dataset of datasets) {
     if (dataset.id.startsWith(hash)) {
@@ -892,11 +894,11 @@ export async function getEvalsWithPredicate(
   return ret;
 }
 
-export async function getEvals(limit: number = DEFAULT_QUERY_LIMIT) {
+export async function getEvals(limit: number = DEFAULT_QUERY_LIMIT): Promise<EvalWithMetadata[]> {
   return getEvalsWithPredicate(() => true, limit);
 }
 
-export async function getEvalFromId(hash: string) {
+export async function getEvalFromId(hash: string): Promise<EvalWithMetadata | undefined> {
   const evals_ = await getEvals();
   for (const eval_ of evals_) {
     if (eval_.id.startsWith(hash)) {
@@ -906,7 +908,7 @@ export async function getEvalFromId(hash: string) {
   return undefined;
 }
 
-export async function deleteEval(evalId: string) {
+export async function deleteEval(evalId: string): Promise<void> {
   const db = getDb();
   await db.transaction(async () => {
     // We need to clean up foreign keys first. We don't have onDelete: 'cascade' set on all these relationships.
@@ -954,12 +956,12 @@ export async function readFilters(
   return ret;
 }
 
-export function printBorder() {
+export function printBorder(): void {
   const border = '='.repeat(TERMINAL_MAX_WIDTH);
   logger.info(border);
 }
 
-export function setupEnv(envPath: string | undefined) {
+export function setupEnv(envPath: string | undefined): void {
   if (envPath) {
     logger.info(`Loading environment variables from ${envPath}`);
     dotenv.config({ path: envPath });
@@ -1035,7 +1037,7 @@ export function providerToIdentifier(provider: TestCase['provider']): string | u
 export function varsMatch(
   vars1: Record<string, string | string[] | object> | undefined,
   vars2: Record<string, string | string[] | object> | undefined,
-) {
+): boolean {
   return deepEqual(vars1, vars2);
 }
 
@@ -1137,7 +1139,9 @@ export function parsePathOrGlob(
  *
  * @throws {Error} If the specified file does not exist.
  */
-export function maybeLoadFromExternalFile(filePath: string | object | Function | undefined | null) {
+export function maybeLoadFromExternalFile(
+  filePath: string | object | Function | undefined | null,
+): string | object | Function | undefined | null {
   if (Array.isArray(filePath)) {
     return filePath.map((path) => {
       const content: any = maybeLoadFromExternalFile(path);

@@ -95,7 +95,7 @@ export class AzureOpenAiGenericProvider implements ApiProvider {
       getEnvString('AZURE_OPENAI_BASE_URL');
 
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   _cachedApiKey?: string;
@@ -484,7 +484,7 @@ export class AzureOpenAiAssistantProvider extends AzureOpenAiGenericProvider {
     this.initializationPromise = this.initialize();
   }
 
-  async initialize() {
+  async initialize(): Promise<void> {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
       throw new Error('Azure OpenAI API key must be set');
@@ -500,7 +500,7 @@ export class AzureOpenAiAssistantProvider extends AzureOpenAiGenericProvider {
     this.initializationPromise = null;
   }
 
-  async ensureInitialized() {
+  async ensureInitialized(): Promise<void> {
     if (this.initializationPromise) {
       await this.initializationPromise;
     }

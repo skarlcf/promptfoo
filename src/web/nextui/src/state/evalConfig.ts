@@ -42,15 +42,15 @@ export const useStore = create<State>()(
       defaultTest: {},
       evaluateOptions: {},
       scenarios: [],
-      setEnv: (env) => set({ env }),
-      setTestCases: (testCases) => set({ testCases }),
-      setDescription: (description) => set({ description }),
-      setProviders: (providers) => set({ providers }),
-      setPrompts: (prompts) => set({ prompts }),
-      setDefaultTest: (testCase) => set({ defaultTest: testCase }),
-      setEvaluateOptions: (options) => set({ evaluateOptions: options }),
-      setScenarios: (scenarios) => set({ scenarios }),
-      setStateFromConfig: (config: Partial<UnifiedConfig>) => {
+      setEnv: (env: EnvOverrides): void => set({ env }),
+      setTestCases: (testCases: TestCase[]): void => set({ testCases }),
+      setDescription: (description: string): void => set({ description }),
+      setProviders: (providers: ProviderOptions[]): void => set({ providers }),
+      setPrompts: (prompts: string[]): void => set({ prompts }),
+      setDefaultTest: (testCase: TestCase): void => set({ defaultTest: testCase }),
+      setEvaluateOptions: (options: EvaluateOptions): void => set({ evaluateOptions: options }),
+      setScenarios: (scenarios: Scenario[]): void => set({ scenarios }),
+      setStateFromConfig: (config: Partial<UnifiedConfig>): void => {
         const updates: Partial<State> = {};
         if (config.description) {
           updates.description = config.description || '';
@@ -88,7 +88,7 @@ export const useStore = create<State>()(
         }
         set(updates);
       },
-      getTestSuite: () => {
+      getTestSuite: (): EvaluateTestSuite => {
         const { description, testCases, providers, prompts, env, scenarios } = get();
         return {
           env,
