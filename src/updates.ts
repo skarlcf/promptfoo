@@ -5,7 +5,7 @@ import { getEnvBool } from './envars';
 import { fetchWithTimeout } from './fetch';
 import logger from './logger';
 
-export async function getLatestVersion() {
+export async function getLatestVersion(): Promise<string> {
   const response = await fetchWithTimeout(`https://api.promptfoo.dev/api/latestVersion`, {}, 1000);
   if (!response.ok) {
     throw new Error(`Failed to fetch package information for promptfoo`);

@@ -31,7 +31,7 @@ export class LlamaProvider implements ApiProvider {
     const { config, id } = options;
     this.modelName = modelName;
     this.config = config;
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {

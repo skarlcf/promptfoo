@@ -81,7 +81,7 @@ const nunjucks = getNunjucksEngine();
 
 const clone = Clone();
 
-function getFinalTest(test: TestCase, assertion: Assertion) {
+function getFinalTest(test: TestCase, assertion: Assertion): TestCase {
   // Deep copy
   const ret = clone(test);
 

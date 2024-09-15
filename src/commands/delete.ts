@@ -4,7 +4,7 @@ import logger from '../logger';
 import telemetry from '../telemetry';
 import { deleteAllEvals, deleteEval, getEvalFromId, getLatestEval, setupEnv } from '../util';
 
-async function handleEvalDelete(evalId: string, envPath?: string) {
+async function handleEvalDelete(evalId: string, envPath?: string): Promise<void> {
   try {
     await deleteEval(evalId);
     logger.info(`Evaluation with ID ${evalId} has been successfully deleted.`);
@@ -14,7 +14,7 @@ async function handleEvalDelete(evalId: string, envPath?: string) {
   }
 }
 
-async function handleEvalDeleteAll() {
+async function handleEvalDeleteAll(): Promise<void> {
   const confirmed = await confirm({
     message:
       'Are you sure you want to delete all stored evaluations? This action cannot be undone.',
@@ -26,7 +26,7 @@ async function handleEvalDeleteAll() {
   logger.info('All evaluations have been deleted.');
 }
 
-export function deleteCommand(program: Command) {
+export function deleteCommand(program: Command): void {
   const deleteCommand = program
     .command('delete <id>')
     .description('Delete various resources')

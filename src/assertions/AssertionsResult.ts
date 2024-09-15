@@ -47,7 +47,7 @@ export class AssertionsResult {
     this._parentAssertionSet = parentAssertionSet;
   }
 
-  get parentAssertionSet() {
+  get parentAssertionSet(): ParentAssertionSet | undefined {
     return this._parentAssertionSet;
   }
 
@@ -61,7 +61,7 @@ export class AssertionsResult {
     result: GradingResult;
     metric?: string;
     weight?: number;
-  }) {
+  }): void {
     this.totalScore += result.score * weight;
     this.totalWeight += weight;
     this.componentResults[index] = result;

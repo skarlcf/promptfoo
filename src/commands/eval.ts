@@ -39,13 +39,13 @@ export async function doEval(
   defaultConfig: Partial<UnifiedConfig>,
   defaultConfigPath: string | undefined,
   evaluateOptions: EvaluateOptions,
-) {
+): Promise<void> {
   setupEnv(cmdObj.envPath);
   let config: Partial<UnifiedConfig> | undefined = undefined;
   let testSuite: TestSuite | undefined = undefined;
   let _basePath: string | undefined = undefined;
 
-  const runEvaluation = async (initialization?: boolean) => {
+  const runEvaluation = async (initialization?: boolean): Promise<void> => {
     const startTime = Date.now();
     telemetry.record('command_used', {
       name: 'eval - started',
@@ -308,7 +308,7 @@ export function evalCommand(
   program: Command,
   defaultConfig: Partial<UnifiedConfig>,
   defaultConfigPath: string | undefined,
-) {
+): void {
   const evaluateOptions: EvaluateOptions = {};
   if (defaultConfig.evaluateOptions) {
     evaluateOptions.generateSuggestions = defaultConfig.evaluateOptions.generateSuggestions;

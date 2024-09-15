@@ -27,7 +27,7 @@ const TELEMETRY_TIMEOUT_MS = 1000;
 export class Telemetry {
   private events: TelemetryEvent[] = [];
 
-  get disabled() {
+  get disabled(): boolean {
     return getEnvBool('PROMPTFOO_DISABLE_TELEMETRY');
   }
 

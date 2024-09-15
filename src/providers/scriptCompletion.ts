@@ -14,7 +14,7 @@ import { safeJsonStringify } from '../util/json';
 
 const ANSI_ESCAPE = /\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g;
 
-function stripText(text: string) {
+function stripText(text: string): string {
   return text.replace(ANSI_ESCAPE, '');
 }
 
@@ -58,7 +58,7 @@ export class ScriptCompletionProvider implements ApiProvider {
     private options?: ProviderOptions,
   ) {}
 
-  id() {
+  id(): string {
     return `exec:${this.scriptPath}`;
   }
 

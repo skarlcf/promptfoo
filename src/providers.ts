@@ -112,8 +112,8 @@ export async function loadApiProvider(
     ret = await loadApiProvider(fileContent.id, { ...context, options: fileContent });
   } else if (providerPath === 'echo') {
     ret = {
-      id: () => 'echo',
-      callApi: async (input: string) => ({ output: input }),
+      id: (): string => 'echo',
+      callApi: async (input: string): Promise<{ output: string }> => ({ output: input }),
     };
   } else if (providerPath.startsWith('exec:')) {
     // Load script module
@@ -434,7 +434,7 @@ export async function loadApiProviders(
           return loadApiProvider(provider, { basePath, env });
         } else if (typeof provider === 'function') {
           return {
-            id: provider.label ? () => provider.label! : () => `custom-function-${idx}`,
+            id: provider.label ? (): string => provider.label! : (): string => `custom-function-${idx}`,
             callApi: provider,
           };
         } else if (provider.id) {

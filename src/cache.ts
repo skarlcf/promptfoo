@@ -16,7 +16,7 @@ let enabled = getEnvBool('PROMPTFOO_CACHE_ENABLED', true);
 const cacheType =
   getEnvString('PROMPTFOO_CACHE_TYPE') || (getEnvString('NODE_ENV') === 'test' ? 'memory' : 'disk');
 
-export function getCache() {
+export function getCache(): Cache {
   if (!cacheInstance) {
     let cachePath = '';
     if (cacheType === 'disk' && enabled) {
@@ -108,18 +108,18 @@ export async function fetchWithCache(
   };
 }
 
-export function enableCache() {
+export function enableCache(): void {
   enabled = true;
 }
 
-export function disableCache() {
+export function disableCache(): void {
   enabled = false;
 }
 
-export async function clearCache() {
+export async function clearCache(): Promise<void> {
   return getCache().reset();
 }
 
-export function isCacheEnabled() {
+export function isCacheEnabled(): boolean {
   return enabled;
 }

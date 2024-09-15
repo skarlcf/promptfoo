@@ -12,9 +12,9 @@ const useShareConfig = create<ShareConfigState>()(
   persist(
     (set) => ({
       apiShareBaseUrl: process.env.NEXT_PUBLIC_PROMPTFOO_SHARE_API_URL || '',
-      setApiShareBaseUrl: (apiShareBaseUrl: string) => set({ apiShareBaseUrl }),
+      setApiShareBaseUrl: (apiShareBaseUrl: string): void => set({ apiShareBaseUrl }),
       appShareBaseUrl: process.env.NEXT_PUBLIC_PROMPTFOO_APP_SHARE_URL || undefined,
-      setAppShareBaseUrl: (appShareBaseUrl: string) => set({ appShareBaseUrl }),
+      setAppShareBaseUrl: (appShareBaseUrl: string): void => set({ appShareBaseUrl }),
     }),
     {
       name: 'share-config-storage',

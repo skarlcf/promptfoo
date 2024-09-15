@@ -21,7 +21,7 @@ export const pythonPromptFunction = async (
     vars: Record<string, string | object>;
     provider?: ApiProvider;
   },
-) => {
+): Promise<string> => {
   invariant(context.provider?.id, 'provider.id is required');
   const transformedContext: PromptFunctionContext = {
     vars: context.vars,
@@ -32,7 +32,9 @@ export const pythonPromptFunction = async (
     },
   };
 
-  return runPython(filePath, functionName, [transformedContext]);
+  const results = await runPython(filePath, functionName, [transformedContext]);
+  invariant(typeof results === 'string', 'results must be a string');
+  return results;
 };
 
 /**
@@ -88,8 +90,8 @@ export function processPythonFile(
       raw: fileContent,
       label,
       function: functionName
-        ? (context) => pythonPromptFunction(filePath, functionName, context)
-        : (context) => pythonPromptFunctionLegacy(filePath, context),
+        ? (context): Promise<string> => pythonPromptFunction(filePath, functionName, context)
+        : (context): Promise<string> => pythonPromptFunctionLegacy(filePath, context),
       config: prompt.config,
     },
   ];

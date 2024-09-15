@@ -20,7 +20,7 @@ export function setConfigDirectoryPath(newPath: string): void {
   configDirectoryPath = newPath;
 }
 
-export function writePromptfooConfig(config: Partial<UnifiedConfig>, outputPath: string) {
+export function writePromptfooConfig(config: Partial<UnifiedConfig>, outputPath: string): void {
   const orderedConfig = orderKeys(config, [
     'description',
     'prompts',

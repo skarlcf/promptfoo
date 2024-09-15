@@ -91,7 +91,7 @@ export async function writeOutput(
   results: EvaluateSummary,
   config: Partial<UnifiedConfig>,
   shareableUrl: string | null,
-) {
+): Promise<void> {
   if (outputPath.match(/^https:\/\/docs\.google\.com\/spreadsheets\//)) {
     const rows = results.table.body.map((row) => {
       const csvRow: CsvRow = {};
@@ -168,7 +168,7 @@ export async function writeMultipleOutputs(
   );
 }
 
-export function sha256(str: string) {
+export function sha256(str: string): string {
   return createHash('sha256').update(str).digest('hex');
 }
 

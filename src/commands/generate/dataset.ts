@@ -103,7 +103,7 @@ export function generateDatasetCommand(
   program: Command,
   defaultConfig: Partial<UnifiedConfig>,
   defaultConfigPath: string | undefined,
-) {
+): void {
   program
     .command('dataset')
     .description('Generate test cases')

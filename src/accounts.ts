@@ -7,7 +7,7 @@ export function getUserEmail(): string | null {
   return globalConfig.account?.email || null;
 }
 
-export function setUserEmail(email: string) {
+export function setUserEmail(email: string): void {
   const config: GlobalConfig = { account: { email } };
   writeGlobalConfig(config);
 }

@@ -9,7 +9,7 @@ export class AssertValidationError extends Error {
   }
 }
 
-function validateAssertSet(assertion: object, test: TestCase) {
+function validateAssertSet(assertion: object, test: TestCase): void {
   if (!('assert' in assertion)) {
     throw new AssertValidationError('assert-set must have an `assert` property', test);
   }
@@ -23,7 +23,7 @@ function validateAssertSet(assertion: object, test: TestCase) {
   }
 }
 
-export function validateAssertions(tests: TestCase<Record<string, string | object | string[]>>[]) {
+export function validateAssertions(tests: TestCase<Record<string, string | object | string[]>>[]): void {
   for (const test of tests) {
     if (test.assert) {
       for (const assertion of test.assert) {

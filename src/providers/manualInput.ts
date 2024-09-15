@@ -14,10 +14,10 @@ export class ManualInputProvider implements ApiProvider {
 
   constructor(options: ManualInputProviderOptions = {}) {
     this.config = options.config;
-    this.id = () => options.id || 'manual-input';
+    this.id = (): string => options.id || 'manual-input';
   }
 
-  id() {
+  id(): string {
     return 'promptfoo:manual-input';
   }
 

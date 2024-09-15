@@ -31,7 +31,7 @@ class LocalAiGenericProvider implements ApiProvider {
       getEnvString('LOCALAI_BASE_URL') ||
       'http://localhost:8080/v1';
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {

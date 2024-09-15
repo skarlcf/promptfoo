@@ -6,7 +6,7 @@ import { evals } from '../database/tables';
 import logger from '../logger';
 import telemetry from '../telemetry';
 
-export function exportCommand(program: Command) {
+export function exportCommand(program: Command): void {
   program
     .command('export <evalId>')
     .description('Export an eval record to a JSON file')

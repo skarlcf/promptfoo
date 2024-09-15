@@ -86,4 +86,10 @@ export default [
       '@typescript-eslint/no-unused-vars': 0,
     },
   },
+  {
+    files: ['src/**/*.ts'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'error',
+    },
+  },
 ];

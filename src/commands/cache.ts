@@ -5,7 +5,7 @@ import telemetry from '../telemetry';
 import { setupEnv } from '../util';
 import { cleanupOldFileResults } from '../util';
 
-export function cacheCommand(program: Command) {
+export function cacheCommand(program: Command): void {
   program
     .command('cache')
     .description('Manage cache')

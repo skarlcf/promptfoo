@@ -6,7 +6,7 @@ import logger from './logger';
 /**
  * Run migrations on the database, skipping the ones already applied. Also creates the sqlite db if it doesn't exist.
  */
-export async function runDbMigrations() {
+export async function runDbMigrations(): Promise<void> {
   try {
     const db = getDb();
     const migrationsFolder = path.join(__dirname, '..', 'drizzle');

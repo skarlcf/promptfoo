@@ -108,7 +108,7 @@ class VertexGenericProvider implements ApiProvider {
     this.env = env;
     this.modelName = modelName;
     this.config = config || {};
-    this.id = id ? () => id : this.id;
+    this.id = id ? (): string => id : this.id;
   }
 
   id(): string {
@@ -128,7 +128,7 @@ class VertexGenericProvider implements ApiProvider {
     );
   }
 
-  async getProjectId() {
+  async getProjectId(): Promise<string | undefined> {
     return (
       (await getGoogleClient()).projectId ||
       this.config.projectId ||
