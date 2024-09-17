@@ -470,10 +470,26 @@ class Evaluator {
 
     maybeEmitAzureOpenAiWarning(testSuite, tests);
 
+
+    for (const testCase of testSuite.tests || []) {
+      logger.warn(`testCase: ${JSON.stringify(testCase, null, 2)}`);
+      if (testCase.options?.transform_input) {
+        const transformedVars = await transform(testCase.options.transform_input, testCase.vars, {
+          prompt: {},
+        });
+        logger.warn(`transformed input: ${JSON.stringify(transformedVars)}`);
+        invariant(typeof transformedVars === 'object', 'Transform function did not return a value');
+        testCase.vars = { ...testCase.vars, ...transformedVars };
+      }
+    }
+
+    logger.warn(`tests: ${JSON.stringify(testSuite, null, 2)}`);
+
     // Prepare vars
     const varNames: Set<string> = new Set();
     const varsWithSpecialColsRemoved: Record<string, string | string[] | object>[] = [];
     for (const testCase of tests) {
+
       if (testCase.vars) {
         const varWithSpecialColsRemoved: Record<string, string | string[] | object> = {};
         for (const varName of Object.keys(testCase.vars)) {
@@ -587,9 +603,9 @@ class Evaluator {
         throw new Error('Expected index to be a number');
       }
 
-      await runExtensionHook(testSuite.extensions, 'beforeEach', {
+      evalStep.test = (await runExtensionHook(testSuite.extensions, 'beforeEach', {
         test: evalStep.test,
-      });
+      })) as Test;
       const row = await this.runEval(evalStep);
 
       results.push(row);

@@ -439,6 +439,7 @@ export async function resolveConfigs(
       provider: cmdObj.grader,
       // rubricPrompt
       ...(config.defaultTest?.options || {}),
+      ...(config.defaultTest?.options?.transform_input ? { transform_input: (await maybeLoadFromExternalFile(config.defaultTest.options.transform_input)) as string } : {}),
     },
     ...config.defaultTest,
   };
