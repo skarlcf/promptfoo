@@ -88,7 +88,7 @@ export async function runPython(
   scriptPath: string,
   method: string,
   args: (string | object | undefined)[],
-  options: { pythonExecutable?: string } = {},
+  options: { pythonExecutable?: string; logLevel?: string } = {},
 ): Promise<string | object> {
   const absPath = path.resolve(scriptPath);
   const tempJsonPath = path.join(
@@ -101,58 +101,105 @@ export async function runPython(
   );
   const customPath = options.pythonExecutable || getEnvString('PROMPTFOO_PYTHON');
   const pythonPath = customPath || 'python';
+  const logLevel = options.logLevel || 'INFO';
 
   await validatePythonPath(pythonPath, typeof customPath === 'string');
 
   const pythonOptions: PythonShellOptions = {
-    mode: 'binary',
+    mode: 'text',
     pythonPath,
     scriptPath: __dirname,
-    args: [absPath, method, tempJsonPath, outputPath],
+    args: [absPath, method, logLevel, tempJsonPath, outputPath],
   };
 
   try {
-    await fs.writeFileSync(tempJsonPath, safeJsonStringify(args), 'utf-8');
+    await fs.promises.writeFile(tempJsonPath, safeJsonStringify(args), 'utf-8');
     logger.debug(`Running Python wrapper with args: ${safeJsonStringify(args)}`);
-    await PythonShell.run('wrapper.py', pythonOptions);
-    const output = await fs.readFileSync(outputPath, 'utf-8');
-    logger.debug(`Python script ${absPath} returned: ${output}`);
-    let result: { type: 'final_result'; data: any } | undefined;
-    try {
-      result = JSON.parse(output);
-    } catch (error) {
-      throw new Error(
-        `Invalid JSON: ${(error as Error).message} when parsing result: ${
-          output
-        }\nStack Trace: ${(error as Error).stack}`,
-      );
-    }
-    if (result?.type !== 'final_result') {
-      throw new Error('The Python script `call_api` function must return a dict with an `output`');
-    }
-    return result.data;
+
+    return new Promise((resolve, reject) => {
+      const pyshell = new PythonShell('wrapper.py', pythonOptions);
+
+      pyshell.on('message', (message) => {
+        const [level, ...msgParts] = message.split(':');
+        const msg = msgParts.join(':');
+        switch (level) {
+          case 'DEBUG':
+            logger.debug(`Python: ${msg}`);
+            break;
+          case 'INFO':
+            logger.info(`Python: ${msg}`);
+            break;
+          case 'WARNING':
+            logger.warn(`Python: ${msg}`);
+            break;
+          case 'ERROR':
+            logger.error(`Python: ${msg}`);
+            break;
+          case 'CRITICAL':
+            logger.error(`Python Critical: ${msg}`);
+            break;
+          default:
+            logger.info(`Python: ${message}`);
+        }
+      });
+
+      pyshell.end(async (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        try {
+          // Wait for a short time to ensure the file is written
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          const data = await fs.promises.readFile(outputPath, 'utf-8');
+          const result = JSON.parse(data);
+          if (result?.type === 'final_result') {
+            resolve(result.data);
+          } else {
+            reject(
+              new Error(
+                'The Python script `call_api` function must return a dict with an `output`',
+              ),
+            );
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('ENOENT')) {
+            reject(
+              new Error(
+                `Output file not found: ${outputPath}. This may be due to the Python script not completing successfully.`,
+              ),
+            );
+          } else {
+            reject(new Error(`Error reading or parsing output: ${(error as Error).message}`));
+          }
+        }
+      });
+    });
   } catch (error) {
     logger.error(
       `Error running Python script: ${(error as Error).message}\nStack Trace: ${
-        (error as Error).stack?.replace('--- Python Traceback ---', 'Python Traceback: ') ||
-        'No Python traceback available'
+        (error as Error).stack || 'No stack trace available'
       }`,
     );
-    throw new Error(
-      `Error running Python script: ${(error as Error).message}\nStack Trace: ${
-        (error as Error).stack?.replace('--- Python Traceback ---', 'Python Traceback: ') ||
-        'No Python traceback available'
-      }`,
-    );
+    throw error;
   } finally {
-    await Promise.all(
-      [tempJsonPath, outputPath].map((file) => {
-        try {
-          fs.unlinkSync(file);
-        } catch (error) {
+    // Use a helper function to safely delete files
+    const safeDelete = async (file: string) => {
+      try {
+        await fs.promises.unlink(file);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
           logger.error(`Error removing ${file}: ${error}`);
         }
-      }),
-    );
+      }
+    };
+    // Wait a bit before deleting files
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const result = await Promise.allSettled([tempJsonPath, outputPath].map(safeDelete));
+    if (result.some((r) => r.status === 'rejected')) {
+      logger.error('Failed to delete some temporary files');
+    }
   }
 }
