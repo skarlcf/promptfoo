@@ -73,6 +73,38 @@ export async function validatePythonPath(pythonPath: string, isExplicit: boolean
   );
 }
 
+const handlePythonLog = (message: string) => {
+  const [level, ...msgParts] = message.split(':');
+  const msg = msgParts.join(':');
+  switch (level) {
+    case 'DEBUG':
+      logger.debug(`Python: ${msg}`);
+      break;
+    case 'INFO':
+      logger.info(`Python: ${msg}`);
+      break;
+    case 'WARNING':
+      logger.warn(`Python: ${msg}`);
+      break;
+    case 'ERROR':
+    case 'CRITICAL':
+      logger.error(`Python ${level}: ${msg}`);
+      break;
+    default:
+      logger.info(`Python: ${message}`);
+  }
+};
+
+const safeDelete = async (file: string) => {
+  try {
+    await fs.promises.unlink(file);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      logger.error(`Error removing ${file}: ${error}`);
+    }
+  }
+};
+
 /**
  * Runs a Python script with the specified method and arguments.
  *
@@ -118,31 +150,7 @@ export async function runPython(
 
     return new Promise((resolve, reject) => {
       const pyshell = new PythonShell('wrapper.py', pythonOptions);
-
-      pyshell.on('message', (message) => {
-        const [level, ...msgParts] = message.split(':');
-        const msg = msgParts.join(':');
-        switch (level) {
-          case 'DEBUG':
-            logger.debug(`Python: ${msg}`);
-            break;
-          case 'INFO':
-            logger.info(`Python: ${msg}`);
-            break;
-          case 'WARNING':
-            logger.warn(`Python: ${msg}`);
-            break;
-          case 'ERROR':
-            logger.error(`Python: ${msg}`);
-            break;
-          case 'CRITICAL':
-            logger.error(`Python Critical: ${msg}`);
-            break;
-          default:
-            logger.info(`Python: ${message}`);
-        }
-      });
-
+      pyshell.on('message', handlePythonLog);
       pyshell.end(async (err) => {
         if (err) {
           reject(err);
@@ -185,21 +193,7 @@ export async function runPython(
     );
     throw error;
   } finally {
-    // Use a helper function to safely delete files
-    const safeDelete = async (file: string) => {
-      try {
-        await fs.promises.unlink(file);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          logger.error(`Error removing ${file}: ${error}`);
-        }
-      }
-    };
-    // Wait a bit before deleting files
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const result = await Promise.allSettled([tempJsonPath, outputPath].map(safeDelete));
-    if (result.some((r) => r.status === 'rejected')) {
-      logger.error('Failed to delete some temporary files');
-    }
+    await Promise.all([tempJsonPath, outputPath].map(safeDelete));
   }
 }
