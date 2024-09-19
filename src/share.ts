@@ -57,7 +57,7 @@ export async function createShareableUrl(
       apiBaseUrl = cloudConfig.apiHost;
     }
 
-    response = await fetchWithProxy(`${apiBaseUrl}/api/evals`, {
+    response = await fetchWithProxy(`${apiBaseUrl}/results`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
