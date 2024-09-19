@@ -1,9 +1,9 @@
 import type { Response } from 'node-fetch';
 import { URL } from 'url';
-import { getAuthor } from './accounts';
-import { getCloudConfig, isCloudEnabled } from './commands/cloud';
 import { SHARE_API_BASE_URL, SHARE_VIEW_BASE_URL, DEFAULT_SHARE_VIEW_BASE_URL } from './constants';
 import { fetchWithProxy } from './fetch';
+import { getAuthor } from './globalConfig/accounts';
+import { cloudConfig } from './globalConfig/cloud';
 import logger from './logger';
 import type { EvaluateSummary, SharedResults, UnifiedConfig } from './types';
 
@@ -50,17 +50,14 @@ export async function createShareableUrl(
   let apiBaseUrl =
     typeof config.sharing === 'object' ? config.sharing.apiBaseUrl : SHARE_API_BASE_URL;
   // check if we're using the cloud
-  if (isCloudEnabled()) {
-    const cloudConfig = getCloudConfig();
-    if (cloudConfig?.apiHost) {
-      apiBaseUrl = cloudConfig.apiHost;
-    }
+  if (cloudConfig.isEnabled()) {
+    apiBaseUrl = cloudConfig.getApiHost();
 
     response = await fetchWithProxy(`${apiBaseUrl}/results`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${cloudConfig?.apiKey}`,
+        Authorization: `Bearer ${cloudConfig.getApiKey()}`,
       },
       body: JSON.stringify(sharedResults),
     });
@@ -81,12 +78,9 @@ export async function createShareableUrl(
 
   let appBaseUrl = SHARE_VIEW_BASE_URL;
   let fullUrl = SHARE_VIEW_BASE_URL;
-  if (isCloudEnabled()) {
-    const cloudConfig = getCloudConfig();
-    if (cloudConfig?.appUrl) {
-      appBaseUrl = cloudConfig.appUrl;
-      fullUrl = `${appBaseUrl}/results/${responseJson.id}`;
-    }
+  if (cloudConfig.isEnabled()) {
+    appBaseUrl = cloudConfig.getAppUrl();
+    fullUrl = `${appBaseUrl}/results/${responseJson.id}`;
   } else {
     const appBaseUrl =
       typeof config.sharing === 'object' ? config.sharing.appBaseUrl : SHARE_VIEW_BASE_URL;
