@@ -1375,19 +1375,20 @@ ${
     const grader = getGraderById(baseType);
     invariant(grader, `Unknown promptfoo grader: ${baseType}`);
     invariant(prompt, `Promptfoo grader ${baseType} must have a prompt`);
+    let body = '';
     if (shouldGenerateRemote()) {
+      logger.debug(`Performing remote grading: ${baseType}`);
       try {
-        const body = JSON.stringify({
+        body = JSON.stringify({
           outputString,
           prompt,
-          provider,
           renderedValue,
           task: baseType,
           test,
         });
-        logger.debug(`Performing remote grading: ${body}`);
+        logger.info(`Performing remote grading: ${body}`);
         const {
-          data: { grade, rubric },
+          data
         } = await fetchWithCache(
           REMOTE_GENERATION_URL,
           {
@@ -1399,6 +1400,11 @@ ${
           },
           REQUEST_TIMEOUT_MS,
         );
+        logger.warn(`Remote grading result: ${JSON.stringify(data)}`);
+        invariant(data, 'Remote grading result is undefined');
+        invariant(data.grade, `data.grade is undefined`);
+        invariant(data.rubric, `data.rubric is undefined`);
+        const { grade, rubric } = data as { grade: GradingResult; rubric: string };
         return {
           assertion: {
             ...assertion,
@@ -1413,6 +1419,7 @@ ${
         };
       } catch (error) {
         logger.error(`Remote grading failed: ${(error as Error).message}`);
+        fs.appendFileSync('body.jsonl', body + '\n');
       }
     }
     const { grade, rubric } = await grader.getResult(
