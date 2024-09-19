@@ -13,6 +13,7 @@ import path from 'path';
 import Clone from 'rfdc';
 import invariant from 'tiny-invariant';
 import { AssertionsResult } from './assertions/AssertionsResult';
+import { fetchWithCache } from './cache';
 import cliState from './cliState';
 import { getEnvBool, getEnvInt } from './envars';
 import { importModule } from './esm';
@@ -33,10 +34,12 @@ import {
 } from './matchers';
 import type { OpenAiChatCompletionProvider } from './providers/openai';
 import { validateFunctionCall } from './providers/openaiUtil';
-import { parseChatPrompt } from './providers/shared';
+import { parseChatPrompt, REQUEST_TIMEOUT_MS } from './providers/shared';
 import { runPython } from './python/pythonUtils';
 import { runPythonCode } from './python/wrapper';
+import { REMOTE_GENERATION_URL } from './redteam/constants';
 import { getGraderById } from './redteam/graders';
+import { shouldGenerateRemote } from './redteam/util';
 import telemetry from './telemetry';
 import type { AssertionValue, ProviderResponse } from './types';
 import {
@@ -1372,27 +1375,65 @@ ${
     const grader = getGraderById(baseType);
     invariant(grader, `Unknown promptfoo grader: ${baseType}`);
     invariant(prompt, `Promptfoo grader ${baseType} must have a prompt`);
-    const { grade, rubric } = await grader.getResult(
-      prompt,
-      outputString,
-      test,
-      provider,
-      renderedValue,
-    );
-    return {
-      assertion: {
-        ...assertion,
-        value: rubric,
-      },
-      ...grade,
-      metadata: {
-        // Pass through all test metadata for redteam
-        ...test.metadata,
-        ...grade.metadata,
-      },
-    };
+    if (shouldGenerateRemote()) {
+      try {
+        const body = JSON.stringify({
+          outputString,
+          prompt,
+          provider,
+          renderedValue,
+          task: baseType,
+          test,
+        });
+        logger.debug(`Performing remote grading: ${body}`);
+        const {
+          data: { grade, rubric },
+        } = await fetchWithCache(
+          REMOTE_GENERATION_URL,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body,
+          },
+          REQUEST_TIMEOUT_MS,
+        );
+        return {
+          assertion: {
+            ...assertion,
+            value: rubric,
+          },
+          ...grade,
+          metadata: {
+            // Pass through all test metadata for redteam
+            ...test.metadata,
+            ...grade.metadata,
+          },
+        };
+      } catch (error) {
+        logger.error(`Remote grading failed: ${(error as Error).message}`);
+      }
+      const { grade, rubric } = await grader.getResult(
+        prompt,
+        outputString,
+        test,
+        provider,
+        renderedValue,
+      );
+      return {
+        assertion: {
+          ...assertion,
+          value: rubric,
+        },
+        ...grade,
+        metadata: {
+          ...test.metadata,
+          ...grade.metadata,
+        },
+      };
+    }
   }
-
   throw new Error('Unknown assertion type: ' + assertion.type);
 }
 
