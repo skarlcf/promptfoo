@@ -9,15 +9,20 @@ import {
   runAssertions,
   validateXml,
 } from '../src/assertions';
+import { fetchWithCache } from '../src/cache';
 import { fetchWithRetries } from '../src/fetch';
+import logger from '../src/logger';
 import {
   DefaultGradingJsonProvider,
   DefaultEmbeddingProvider,
   OpenAiChatCompletionProvider,
 } from '../src/providers/openai';
 import { ReplicateModerationProvider } from '../src/providers/replicate';
+import { REQUEST_TIMEOUT_MS } from '../src/providers/shared';
 import { runPython } from '../src/python/pythonUtils';
 import { runPythonCode } from '../src/python/wrapper';
+import { REMOTE_GENERATION_URL } from '../src/redteam/constants';
+import { shouldGenerateRemote } from '../src/redteam/util';
 import type {
   Assertion,
   ApiProvider,
@@ -27,9 +32,19 @@ import type {
 } from '../src/types';
 import { TestGrader } from './utils';
 
-jest.mock('proxy-agent', () => ({
-  ProxyAgent: jest.fn().mockImplementation(() => ({})),
+jest.mock('../src/cache', () => ({
+  fetchWithCache: jest.fn(),
 }));
+
+jest.mock('../src/cliState', () => ({
+  basePath: '/config_path',
+}));
+
+jest.mock('../src/database', () => ({
+  getDb: jest.fn(),
+}));
+
+jest.mock('../src/esm');
 
 jest.mock('../src/fetch', () => {
   const actual = jest.requireActual('../src/fetch');
@@ -39,41 +54,11 @@ jest.mock('../src/fetch', () => {
   };
 });
 
-jest.mock('../src/python/wrapper', () => {
-  const actual = jest.requireActual('../src/python/wrapper');
-  return {
-    ...actual,
-    runPythonCode: jest.fn(actual.runPythonCode),
-  };
-});
-
-jest.mock('../src/python/pythonUtils', () => {
-  const actual = jest.requireActual('../src/python/pythonUtils');
-  return {
-    ...actual,
-    runPython: jest.fn(actual.runPython),
-  };
-});
-
-jest.mock('glob', () => ({
-  globSync: jest.fn(),
+jest.mock('../src/logger', () => ({
+  debug: jest.fn(),
+  error: jest.fn(),
 }));
 
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(),
-  promises: {
-    readFile: jest.fn(),
-  },
-}));
-
-jest.mock('../src/esm');
-jest.mock('../src/database', () => ({
-  getDb: jest.fn(),
-}));
-
-jest.mock('../src/cliState', () => ({
-  basePath: '/config_path',
-}));
 jest.mock('../src/matchers', () => {
   const actual = jest.requireActual('../src/matchers');
   return {
@@ -86,6 +71,41 @@ jest.mock('../src/matchers', () => {
       .mockResolvedValue({ pass: true, score: 1, reason: 'Mocked reason' }),
   };
 });
+
+jest.mock('../src/python/pythonUtils', () => {
+  const actual = jest.requireActual('../src/python/pythonUtils');
+  return {
+    ...actual,
+    runPython: jest.fn(actual.runPython),
+  };
+});
+
+jest.mock('../src/python/wrapper', () => {
+  const actual = jest.requireActual('../src/python/wrapper');
+  return {
+    ...actual,
+    runPythonCode: jest.fn(actual.runPythonCode),
+  };
+});
+
+jest.mock('../src/redteam/util', () => ({
+  shouldGenerateRemote: jest.fn(),
+}));
+
+jest.mock('fs', () => ({
+  readFileSync: jest.fn(),
+  promises: {
+    readFile: jest.fn(),
+  },
+}));
+
+jest.mock('glob', () => ({
+  globSync: jest.fn(),
+}));
+
+jest.mock('proxy-agent', () => ({
+  ProxyAgent: jest.fn().mockImplementation(() => ({})),
+}));
 
 const Grader = new TestGrader();
 
@@ -3915,5 +3935,150 @@ describe('containsXml', () => {
     const input = '<root1>Content</root1> text <root2><child>More</child></root2>';
     const result = containsXml(input, ['root2.child']);
     expect(result.isValid).toBe(true);
+  });
+});
+
+describe('promptfoo:redteam: assertion', () => {
+  const mockProvider = {} as ApiProvider;
+  const mockTest = {
+    metadata: {
+      purpose: 'a test purpose',
+    },
+  } as AtomicTestCase;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should use remote grading when shouldGenerateRemote returns true', async () => {
+    jest.mocked(shouldGenerateRemote).mockReturnValue(true);
+    jest.mocked(fetchWithCache).mockResolvedValue({
+      data: {
+        grade: { pass: true, score: 1, reason: 'Remote grading passed' },
+        rubric: 'Remote rubric',
+      },
+      cached: false,
+    });
+
+    const result = await runAssertion({
+      prompt: 'Test prompt',
+      provider: mockProvider,
+      assertion: { type: 'promptfoo:redteam:rbac' },
+      test: mockTest,
+      providerResponse: { output: 'Test output' },
+    });
+
+    expect(shouldGenerateRemote).toHaveBeenCalled();
+    expect(fetchWithCache).toHaveBeenCalledWith(
+      REMOTE_GENERATION_URL,
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: expect.any(String),
+      }),
+      REQUEST_TIMEOUT_MS,
+    );
+    expect(result).toEqual({
+      assertion: {
+        type: 'promptfoo:redteam:rbac',
+        value: 'Remote rubric',
+      },
+      pass: true,
+      score: 1,
+      reason: 'Remote grading passed',
+      metadata: {
+        purpose: 'a test purpose',
+      },
+    });
+    expect(logger.debug).toHaveBeenCalled();
+  });
+
+  it('should fall back to local grading when remote grading fails', async () => {
+    jest.mocked(shouldGenerateRemote).mockReturnValue(true);
+    jest.mocked(fetchWithCache).mockImplementation(() => {
+      throw new Error('Remote grading failed');
+    });
+
+    const mockGrader = {
+      getResult: jest.fn().mockResolvedValue({
+        grade: { pass: true, score: 0.8, reason: 'Local grading passed' },
+        rubric: 'Local rubric',
+      }),
+    };
+    jest.mock('../src/redteam/graders', () => ({
+      getGraderById: jest.fn().mockReturnValue(mockGrader),
+    }));
+
+    const result = await runAssertion({
+      prompt: 'Test prompt',
+      provider: mockProvider,
+      assertion: { type: 'promptfoo:redteam:rbac' },
+      test: mockTest,
+      providerResponse: { output: 'Test output' },
+    });
+
+    expect(shouldGenerateRemote).toHaveBeenCalled();
+    expect(fetchWithCache).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Remote grading failed'));
+    expect(result).toEqual({
+      assertion: {
+        type: 'promptfoo:redteam:rbac',
+        value: expect.stringContaining('You are evaluating an AI Agent'),
+      },
+      metadata: {
+        purpose: 'a test purpose',
+      },
+      pass: false,
+      reason: expect.stringContaining('API call error'),
+      score: 0,
+      tokensUsed: {
+        cached: 0,
+        completion: 0,
+        prompt: 0,
+        total: 0,
+      },
+    });
+  });
+
+  it('should use local grading when shouldGenerateRemote returns false', async () => {
+    jest.mocked(shouldGenerateRemote).mockReturnValue(false);
+    const mockGrader = {
+      getResult: jest.fn().mockResolvedValue({
+        grade: { pass: true, score: 0.9, reason: 'Local grading passed' },
+        rubric: 'Local rubric',
+      }),
+    };
+    jest.mock('../src/redteam/graders', () => ({
+      getGraderById: jest.fn().mockReturnValue(mockGrader),
+    }));
+    await runAssertion({
+      prompt: 'Test prompt',
+      provider: mockProvider,
+      assertion: { type: 'promptfoo:redteam:rbac' },
+      test: mockTest,
+      providerResponse: { output: 'Test output' },
+    });
+    expect(shouldGenerateRemote).toHaveBeenCalled();
+    expect(fetchWithCache).not.toHaveBeenCalled();
+  });
+
+  it('should throw an error for unknown grader', async () => {
+    jest.mocked(shouldGenerateRemote).mockReturnValue(false);
+
+    jest.mock('../src/redteam/graders', () => ({
+      getGraderById: jest.fn().mockReturnValue(null),
+    }));
+
+    await expect(
+      runAssertion({
+        prompt: 'Test prompt',
+        provider: mockProvider,
+        assertion: { type: 'promptfoo:redteam:unknown-grader' },
+        test: mockTest,
+        providerResponse: { output: 'Test output' },
+      }),
+    ).rejects.toThrow(
+      'Invariant failed: Unknown promptfoo grader: promptfoo:redteam:unknown-grader',
+    );
   });
 });

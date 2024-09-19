@@ -1414,25 +1414,25 @@ ${
       } catch (error) {
         logger.error(`Remote grading failed: ${(error as Error).message}`);
       }
-      const { grade, rubric } = await grader.getResult(
-        prompt,
-        outputString,
-        test,
-        provider,
-        renderedValue,
-      );
-      return {
-        assertion: {
-          ...assertion,
-          value: rubric,
-        },
-        ...grade,
-        metadata: {
-          ...test.metadata,
-          ...grade.metadata,
-        },
-      };
     }
+    const { grade, rubric } = await grader.getResult(
+      prompt,
+      outputString,
+      test,
+      provider,
+      renderedValue,
+    );
+    return {
+      assertion: {
+        ...assertion,
+        value: rubric,
+      },
+      ...grade,
+      metadata: {
+        ...test.metadata,
+        ...grade.metadata,
+      },
+    };
   }
   throw new Error('Unknown assertion type: ' + assertion.type);
 }
