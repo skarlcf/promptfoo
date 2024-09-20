@@ -39,7 +39,6 @@ async function doGenerateDataset(options: DatasetGenerateOptions): Promise<void>
     const r = await loadDefaultConfig();
     defaultConfig = r.defaultConfig;
     defaultConfigPath = r.defaultConfigPath;
-
   }
   const configPath = options.config || defaultConfigPath;
   if (configPath) {

@@ -307,7 +307,7 @@ export async function doEval(
 
 export async function evalCommand(program: Command) {
   const evaluateOptions: EvaluateOptions = {};
-  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
+  let { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
   if (defaultConfig.evaluateOptions) {
     evaluateOptions.generateSuggestions = defaultConfig.evaluateOptions.generateSuggestions;
     evaluateOptions.maxConcurrency = defaultConfig.evaluateOptions.maxConcurrency;
@@ -425,7 +425,7 @@ export async function evalCommand(program: Command) {
       defaultConfig?.evaluateOptions?.interactiveProviders,
     )
     .option('--remote', 'Force remote inference wherever possible (used for red teams)', false)
-    .action((opts) => {
+    .action(async (opts) => {
       if (opts.interactiveProviders) {
         logger.warn(
           chalk.yellow(dedent`
@@ -440,6 +440,12 @@ export async function evalCommand(program: Command) {
 
       if (opts.remote) {
         cliState.remote = true;
+      }
+
+      if (opts.config) {
+        const r = await loadDefaultConfig(opts.config);
+        defaultConfig = r.defaultConfig;
+        defaultConfigPath = r.defaultConfigPath;
       }
 
       for (const maybeFilePath of opts.output ?? []) {

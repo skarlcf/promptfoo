@@ -14,6 +14,8 @@ export async function loadDefaultConfig(dir?: string | undefined): Promise<{
   defaultConfig: Partial<UnifiedConfig>;
   defaultConfigPath: string | undefined;
 }> {
+  const throwOnUndefined = typeof dir === 'string';
+
   const pwd = dir || process.cwd();
 
   if (pwd in cache) {
@@ -34,6 +36,10 @@ export async function loadDefaultConfig(dir?: string | undefined): Promise<{
       break;
     }
   }
+  if (throwOnUndefined && !defaultConfigPath) {
+    throw new Error('No Config File Found');
+  }
+
   cache[pwd] = {
     defaultConfig,
     defaultConfigPath,
