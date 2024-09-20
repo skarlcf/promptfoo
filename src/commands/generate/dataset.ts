@@ -32,8 +32,15 @@ async function doGenerateDataset(options: DatasetGenerateOptions): Promise<void>
 
   let testSuite: TestSuite;
 
-  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
+  let defaultConfig: Partial<UnifiedConfig> = {};
+  let defaultConfigPath: string | undefined;
 
+  if (typeof options.config === 'undefined') {
+    const r = await loadDefaultConfig();
+    defaultConfig = r.defaultConfig;
+    defaultConfigPath = r.defaultConfigPath;
+
+  }
   const configPath = options.config || defaultConfigPath;
   if (configPath) {
     const resolved = await resolveConfigs(
