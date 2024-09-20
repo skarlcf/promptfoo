@@ -30,6 +30,7 @@ import {
   writeOutput,
   writeResultsToDatabase,
 } from '../util';
+import { loadDefaultConfig } from '../util/config/default';
 import { resolveConfigs } from '../util/config/load';
 import { filterProviders } from './eval/filterProviders';
 import { filterTests } from './eval/filterTests';
@@ -304,12 +305,9 @@ export async function doEval(
   await runEvaluation(true /* initialization */);
 }
 
-export function evalCommand(
-  program: Command,
-  defaultConfig: Partial<UnifiedConfig>,
-  defaultConfigPath: string | undefined,
-) {
+export async function evalCommand(program: Command) {
   const evaluateOptions: EvaluateOptions = {};
+  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
   if (defaultConfig.evaluateOptions) {
     evaluateOptions.generateSuggestions = defaultConfig.evaluateOptions.generateSuggestions;
     evaluateOptions.maxConcurrency = defaultConfig.evaluateOptions.maxConcurrency;

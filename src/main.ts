@@ -26,14 +26,12 @@ async function main() {
   await checkForUpdates();
   await runDbMigrations();
 
-  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
-
   const program = new Command();
 
   cacheCommand(program);
   configCommand(program);
   deleteCommand(program);
-  evalCommand(program, defaultConfig, defaultConfigPath);
+  evalCommand(program);
   exportCommand(program);
   feedbackCommand(program);
   importCommand(program);
@@ -43,6 +41,8 @@ async function main() {
   showCommand(program);
   versionCommand(program);
   viewCommand(program);
+
+  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
 
   const generateCommand = program.command('generate').description('Generate synthetic data');
   generateDatasetCommand(generateCommand, defaultConfig, defaultConfigPath);

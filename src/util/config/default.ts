@@ -2,11 +2,23 @@ import path from 'path';
 import type { UnifiedConfig } from '../../types';
 import { maybeReadConfig } from './load';
 
+const state: Record<
+  string,
+  {
+    defaultConfig: Partial<UnifiedConfig>;
+    defaultConfigPath: string | undefined;
+  }
+> = {};
+
 export async function loadDefaultConfig(): Promise<{
   defaultConfig: Partial<UnifiedConfig>;
   defaultConfigPath: string | undefined;
 }> {
   const pwd = process.cwd();
+  if (pwd in state) {
+    return state[pwd];
+  }
+
   let defaultConfig: Partial<UnifiedConfig> = {};
   let defaultConfigPath: string | undefined;
 
@@ -21,6 +33,9 @@ export async function loadDefaultConfig(): Promise<{
       break;
     }
   }
-
-  return { defaultConfig, defaultConfigPath };
+  state[pwd] = {
+    defaultConfig,
+    defaultConfigPath,
+  };
+  return state[pwd];
 }
