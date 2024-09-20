@@ -18,6 +18,10 @@ jest.mock('../../../src/util/config/load', () => ({
   resolveConfigs: jest.fn(),
 }));
 
+jest.mock('../../../src/util/config/default', () => ({
+  loadDefaultConfig: jest.fn(() => ({ defaultConfig: {}, defaultConfigPath: undefined })),
+}));
+
 describe('doGenerateRedteam', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,7 +53,6 @@ describe('doGenerateRedteam', () => {
       output: 'output.yaml',
       config: 'config.yaml',
       cache: true,
-      defaultConfig: {},
       write: true,
     };
 
@@ -114,7 +117,6 @@ describe('doGenerateRedteam', () => {
     const options: RedteamCliGenerateOptions = {
       config: 'config.yaml',
       cache: true,
-      defaultConfig: {},
       write: true,
     };
 
@@ -158,7 +160,6 @@ describe('doGenerateRedteam', () => {
     const options: RedteamCliGenerateOptions = {
       purpose: 'Test purpose',
       cache: true,
-      defaultConfig: {},
       write: true,
       output: 'redteam.yaml',
     };

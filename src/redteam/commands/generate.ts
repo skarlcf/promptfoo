@@ -14,6 +14,7 @@ import telemetry from '../../telemetry';
 import type { TestSuite, UnifiedConfig } from '../../types';
 import { printBorder, setupEnv } from '../../util';
 import { writePromptfooConfig } from '../../util/config';
+import { loadDefaultConfig } from '../../util/config/default';
 import { resolveConfigs } from '../../util/config/load';
 import { RedteamGenerateOptionsSchema, RedteamConfigSchema } from '../../validators/redteam';
 import {
@@ -34,15 +35,17 @@ export async function doGenerateRedteam(options: RedteamCliGenerateOptions) {
     disableCache();
   }
 
+  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
+
   let testSuite: TestSuite;
   let redteamConfig: RedteamFileConfig | undefined;
-  const configPath = options.config || options.defaultConfigPath;
+  const configPath = options.config || defaultConfigPath;
   if (configPath) {
     const resolved = await resolveConfigs(
       {
         config: [configPath],
       },
-      options.defaultConfig,
+      defaultConfig,
     );
     testSuite = resolved.testSuite;
     redteamConfig = resolved.config.redteam;
@@ -204,12 +207,7 @@ export async function doGenerateRedteam(options: RedteamCliGenerateOptions) {
   await telemetry.send();
 }
 
-export function generateRedteamCommand(
-  program: Command,
-  command: 'redteam' | 'generate',
-  defaultConfig: Partial<UnifiedConfig>,
-  defaultConfigPath: string | undefined,
-) {
+export function generateRedteamCommand(program: Command, command: 'redteam' | 'generate') {
   program
     .command(command) // generate or redteam depending on if called from redteam or generate
     .description('Generate adversarial test cases')
@@ -268,7 +266,7 @@ export function generateRedteamCommand(
       '-j, --max-concurrency <number>',
       'Maximum number of concurrent API calls',
       (val) => Number.parseInt(val, 10),
-      defaultConfig.evaluateOptions?.maxConcurrency,
+      1,
     )
     .option('--delay <number>', 'Delay in milliseconds between plugin API calls', (val) =>
       Number.parseInt(val, 10),
@@ -308,8 +306,6 @@ export function generateRedteamCommand(
         const validatedOpts = RedteamGenerateOptionsSchema.parse({
           ...opts,
           ...overrides,
-          defaultConfig,
-          defaultConfigPath,
         });
         doGenerateRedteam(validatedOpts);
       } catch (error) {

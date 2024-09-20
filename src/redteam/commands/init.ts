@@ -576,8 +576,6 @@ export async function redteamInit(directory: string | undefined) {
         cache: false,
         write: false,
         output: 'redteam.yaml',
-        defaultConfig: {},
-        defaultConfigPath: configPath,
         numTests,
       });
     } else {

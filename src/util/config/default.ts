@@ -10,11 +10,10 @@ const cache: Record<
   }
 > = {};
 
-export async function loadDefaultConfig(dir: string | undefined): Promise<{
+export async function loadDefaultConfig(dir?: string | undefined): Promise<{
   defaultConfig: Partial<UnifiedConfig>;
   defaultConfigPath: string | undefined;
 }> {
-
   const pwd = dir || process.cwd();
 
   if (pwd in cache) {

@@ -20,7 +20,6 @@ import { generateRedteamCommand } from './redteam/commands/generate';
 import { initCommand as redteamInitCommand } from './redteam/commands/init';
 import { pluginsCommand as redteamPluginsCommand } from './redteam/commands/plugins';
 import { checkForUpdates } from './updates';
-import { loadDefaultConfig } from './util/config/default';
 
 async function main() {
   await checkForUpdates();
@@ -42,16 +41,14 @@ async function main() {
   versionCommand(program);
   viewCommand(program);
 
-  const { defaultConfig, defaultConfigPath } = await loadDefaultConfig();
-
   const generateCommand = program.command('generate').description('Generate synthetic data');
-  generateDatasetCommand(generateCommand, defaultConfig, defaultConfigPath);
-  generateRedteamCommand(generateCommand, 'redteam', defaultConfig, defaultConfigPath);
+  generateDatasetCommand(generateCommand);
+  generateRedteamCommand(generateCommand, 'redteam');
 
   const redteamBaseCommand = program.command('redteam').description('Red team LLM applications');
   redteamInitCommand(redteamBaseCommand);
   redteamPluginsCommand(redteamBaseCommand);
-  generateRedteamCommand(redteamBaseCommand, 'generate', defaultConfig, defaultConfigPath);
+  generateRedteamCommand(redteamBaseCommand, 'generate');
 
   if (!process.argv.slice(2).length) {
     program.outputHelp();

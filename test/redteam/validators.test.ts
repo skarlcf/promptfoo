@@ -17,7 +17,6 @@ describe('redteamGenerateOptionsSchema', () => {
     const input = {
       cache: true,
       config: 'promptfooconfig.yaml',
-      defaultConfig: { temperature: 0.7 },
       injectVar: 'query',
       numTests: 50,
       output: 'sample-results.json',
@@ -31,7 +30,6 @@ describe('redteamGenerateOptionsSchema', () => {
       data: {
         cache: true,
         config: 'promptfooconfig.yaml',
-        defaultConfig: { temperature: 0.7 },
         injectVar: 'query',
         numTests: 50,
         output: 'sample-results.json',

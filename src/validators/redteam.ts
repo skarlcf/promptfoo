@@ -64,8 +64,6 @@ export const RedteamStrategySchema = z.union([
 export const RedteamGenerateOptionsSchema = z.object({
   cache: z.boolean().describe('Whether to use caching'),
   config: z.string().optional().describe('Path to the configuration file'),
-  defaultConfig: z.record(z.unknown()).describe('Default configuration object'),
-  defaultConfigPath: z.string().optional().describe('Path to the default configuration file'),
   envFile: z.string().optional().describe('Path to the environment file'),
   injectVar: z.string().optional().describe('Variable to inject'),
   language: z.string().optional().describe('Language of tests to generate'),

@@ -37,8 +37,6 @@ type CommonOptions = {
 export interface RedteamCliGenerateOptions extends CommonOptions {
   cache: boolean;
   config?: string;
-  defaultConfig: Record<string, unknown>;
-  defaultConfigPath?: string;
   envFile?: string;
   maxConcurrency?: number;
   output?: string;
